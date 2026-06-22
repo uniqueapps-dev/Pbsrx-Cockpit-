@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="theme-color" content="#0f1117"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>PBSRx Cockpit</title>
+<link rel="manifest" href="#" id="manifest-link"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{
+  --bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--bg4:#252d40;
+  --amber:#f59e0b;--amber2:#fbbf24;--amber-dim:#92400e;--amber-faint:#1c1408;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --green:#10b981;--green-faint:#052e1c;--green-dim:#0d4429;
+  --red:#f43f5e;--red-faint:#1c0812;
+  --blue:#38bdf8;--blue-faint:#0c2340;--blue-dim:#1e3a8a;
+  --purple:#a78bfa;--purple-faint:#2e1065;
+  --orange:#fb923c;--orange-faint:#431407;
+  --teal:#2dd4bf;--teal-faint:#0a2926;
+  --border:#2a3347;--radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;overscroll-behavior:none}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;position:relative}
+.screen{display:none;flex:1;overflow-y:auto;padding-bottom:80px}
+.screen.active{display:block}
+
+/* TOPBAR */
+.topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--amber)}
+.topbar-sub{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+.topbar-right{display:flex;gap:6px;align-items:center}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 2px 8px;cursor:pointer;color:var(--text3);transition:color .15s;gap:3px;font-size:9px;font-weight:500;letter-spacing:.2px;text-transform:uppercase;position:relative}
+.nav-item.active{color:var(--amber)}
+.nav-item svg{width:20px;height:20px}
+.nav-badge{position:absolute;top:5px;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:15px;text-align:center;line-height:14px}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.stat-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.stat-label{font-size:13px;color:var(--text2)}
+.stat-value{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--text)}
+.stat-value.amber{color:var(--amber)}.stat-value.green{color:var(--green)}.stat-value.red{color:var(--red)}.stat-value.blue{color:var(--blue)}.stat-value.muted{color:var(--text3)}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;letter-spacing:.3px}
+.pill-fast{background:#064e3b;color:#34d399}.pill-stable{background:#1e3a5f;color:#60a5fa}
+.pill-slow{background:#451a03;color:#fb923c}.pill-stagnant{background:#3b0764;color:#c084fc}
+.pill-dead{background:#1c1917;color:#78716c;border:1px solid #292524}
+.pill-own{background:#1e3a5f;color:#60a5fa}.pill-consignment{background:#064e3b;color:#34d399}
+.pill-mixed{background:#451a03;color:#fb923c}.pill-review{background:#7c2d12;color:#fb923c;border:1px solid #92400e}
+.pill-push{background:#1a2e1a;color:#4ade80;border:1px solid #166534}
+.pill-reorder{background:var(--blue-faint);color:var(--blue);border:1px solid var(--blue-dim)}
+.pill-request{background:var(--teal-faint);color:var(--teal);border:1px solid #0d4a45}
+.pill-high{background:var(--red-faint);color:var(--red)}.pill-mod{background:var(--orange-faint);color:var(--orange)}.pill-low{background:var(--green-faint);color:var(--green)}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--amber)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-right:36px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;letter-spacing:.2px}
+.btn-primary{background:var(--amber);color:#000}.btn-primary:active{background:var(--amber2)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-ghost:active{border-color:var(--amber);color:var(--amber)}
+.btn-danger{background:#1c0a0a;color:var(--red);border:1px solid #3b1111}
+.btn-success{background:var(--green-faint);color:var(--green);border:1px solid var(--green-dim)}
+.btn-teal{background:var(--teal-faint);color:var(--teal);border:1px solid #0d4a45}
+.btn-sm{padding:7px 12px;font-size:12px}.btn-xs{padding:5px 9px;font-size:11px;border-radius:6px}.btn-block{width:100%}
+
+/* SEARCH */
+.search-wrap{padding:10px 16px;position:sticky;top:57px;z-index:40;background:var(--bg)}
+.search-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 14px 9px 38px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2364748b' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center;background-size:18px}
+.search-input:focus{border-color:var(--amber)}
+
+/* PROGRESS */
+.progress-wrap{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden;margin-top:8px}
+.progress-bar{height:100%;border-radius:4px;background:var(--amber);transition:width .4s ease}
+.progress-bar.green{background:var(--green)}.progress-bar.red{background:var(--red)}
+
+/* EXPIRY */
+.expiry-urgent{color:var(--red)}.expiry-warn{color:var(--orange)}.expiry-ok{color:var(--text3)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--bg2);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:92dvh;overflow-y:auto;padding:20px 16px 32px}
+.modal-handle{width:36px;height:4px;background:var(--bg4);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--amber);margin-bottom:16px;letter-spacing:1px}
+
+/* EMPTY */
+.empty{text-align:center;padding:28px 20px;color:var(--text3)}
+.empty-icon{font-size:28px;margin-bottom:10px}.empty-text{font-size:13px;line-height:1.6}
+
+/* HERO */
+.hero-v2{background:linear-gradient(160deg,#161b27 0%,#1a2030 100%);border-bottom:1px solid var(--border);padding:14px 16px 12px}
+.hero-label{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.hero-value{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;line-height:1}
+.hero-sub{font-size:12px;color:var(--text3);margin-top:3px}
+.hero-progress-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.hero-progress-track{flex:1;background:var(--bg3);border-radius:4px;height:5px;overflow:hidden}
+.hero-progress-fill{height:100%;border-radius:4px;background:var(--green);transition:width .5s ease}
+.hero-progress-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);flex-shrink:0}
+
+/* MORNING BRIEFING */
+.briefing-card{background:linear-gradient(135deg,#161b27,#1a2030);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.briefing-header{padding:11px 16px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.briefing-title{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.briefing-date{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+.briefing-item{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)}
+.briefing-item:last-child{border-bottom:none}
+.briefing-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.briefing-text{font-size:13px;color:var(--text);flex:1;line-height:1.3}
+.briefing-val{font-size:12px;font-family:'DM Mono',monospace;flex-shrink:0}
+
+/* ACTION QUEUE */
+.focus-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.focus-header{padding:11px 16px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.focus-header-left{display:flex;align-items:center;gap:8px}
+.focus-dot{width:7px;height:7px;border-radius:50%}
+.focus-title{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.aq-item{display:flex;align-items:flex-start;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.aq-item:last-child{border-bottom:none}
+.aq-priority{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:32px}
+.aq-priority.high{background:var(--red)}.aq-priority.med{background:var(--orange)}.aq-priority.low{background:var(--green)}
+.aq-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.aq-body{flex:1;min-width:0}
+.aq-title{font-size:13px;font-weight:500;color:var(--text);line-height:1.35}
+.aq-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.aq-chain{font-size:10px;color:var(--blue);margin-top:3px;font-style:italic}
+.aq-actions{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.aq-btn{font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.aq-btn-do{background:var(--amber);color:#000}
+.aq-btn-done{background:var(--green-faint);color:var(--green);border:1px solid var(--green-dim)}
+.aq-btn-snooze{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.aq-badge{font-size:10px;font-weight:600;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:4px;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.aq-badge.high{background:var(--red-faint);color:var(--red)}.aq-badge.med{background:var(--orange-faint);color:var(--orange)}.aq-badge.low{background:var(--green-faint);color:var(--green)}
+
+/* PUSH */
+.push-item{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer}
+.push-item:last-child{border-bottom:none}
+.push-rank{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amber-dim);width:18px;flex-shrink:0;text-align:center}
+.push-body{flex:1;min-width:0}
+.push-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.push-reason{font-size:11px;color:var(--text3);margin-top:2px}
+.push-value{text-align:right;flex-shrink:0}
+.push-value-num{font-family:'DM Mono',monospace;font-size:13px;color:var(--amber);font-weight:500}
+.push-value-label{font-size:10px;color:var(--text3)}
+
+/* PURCHASING PANEL */
+.purchase-row{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.purchase-row:last-child{border-bottom:none}
+.purchase-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.purchase-body{flex:1;min-width:0}
+.purchase-name{font-size:13px;font-weight:600;color:var(--text)}
+.purchase-reason{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4}
+.purchase-right{text-align:right;flex-shrink:0}
+.confidence-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;font-family:'DM Mono',monospace;letter-spacing:.3px}
+.conf-high{background:var(--green-faint);color:var(--green)}
+.conf-mod{background:var(--amber-faint);color:var(--amber)}
+.conf-low{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+
+/* REQUEST TRACKING */
+.req-item{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.req-item:last-child{border-bottom:none}
+.req-count{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amber);width:24px;text-align:center;flex-shrink:0;line-height:1}
+.req-body{flex:1;min-width:0}
+.req-name{font-size:14px;font-weight:600;color:var(--text)}
+.req-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.req-trend{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:4px;display:inline-block}
+.req-trend.up{background:var(--green-faint);color:var(--green)}
+.req-trend.flat{background:var(--bg3);color:var(--text3)}
+.req-actions{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.req-btn{font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
+.req-btn-stock{background:var(--green-faint);color:var(--green);border:1px solid var(--green-dim)}
+.req-btn-dismiss{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.req-btn-review{background:var(--amber-faint);color:var(--amber);border:1px solid var(--amber-dim)}
+
+/* SORT CHIPS */
+.sort-bar{display:flex;gap:6px;padding:0 16px 10px;overflow-x:auto;scrollbar-width:none}
+.sort-bar::-webkit-scrollbar{display:none}
+.sort-chip{display:inline-flex;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg3);color:var(--text3);cursor:pointer;border:1px solid var(--border);white-space:nowrap;transition:all .15s}
+.sort-chip.active{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-dim)}
+
+/* INVENTORY CARD */
+.inv-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+.inv-card.inv-push{border-color:#166534;background:linear-gradient(135deg,var(--bg2),#0a1f0a)}
+.inv-card.inv-urgent{border-color:#7c2d12}
+.inv-card.inv-reorder{border-color:var(--blue-dim)}
+.inv-card.inv-dontorder{border-color:#3b0764}
+.inv-card-body{padding:12px 14px 9px;cursor:pointer}
+.inv-card-actions{display:flex;border-top:1px solid var(--border)}
+.qa-btn{flex:1;padding:8px 4px;font-size:11px;font-weight:600;color:var(--text3);background:transparent;border:none;cursor:pointer;text-align:center;transition:all .15s;border-right:1px solid var(--border)}
+.qa-btn:last-child{border-right:none}
+.qa-btn:active{background:var(--bg3);color:var(--amber)}
+.last-move{font-size:11px;color:var(--text3)}
+.last-move.urgent{color:var(--orange)}.last-move.dead-time{color:var(--red)}
+
+/* MOMENTUM */
+.momentum-up{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--green);background:var(--green-faint);padding:2px 6px;border-radius:4px}
+.momentum-down{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--orange);background:var(--orange-faint);padding:2px 6px;border-radius:4px}
+.momentum-new{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--blue);background:var(--blue-faint);padding:2px 6px;border-radius:4px}
+.momentum-reawaken{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--teal);background:var(--teal-faint);padding:2px 6px;border-radius:4px}
+
+/* QA GRID */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.qa-action{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 10px;text-align:center;cursor:pointer;transition:all .15s}
+.qa-action:active{border-color:var(--amber);background:var(--amber-faint)}
+.qa-action-icon{font-size:20px;margin-bottom:5px}
+.qa-action-label{font-size:12px;font-weight:500;color:var(--text2)}
+
+/* LEDGER */
+.ledger-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.ledger-row:last-child{border-bottom:none}
+
+/* CONSIGNMENT HERO */
+.con-hero{background:linear-gradient(135deg,var(--green-faint),#0a2018);border:1px solid var(--green-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+.con-hero-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--green);opacity:.7;margin-bottom:4px}
+.con-hero-value{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--green);letter-spacing:1px;line-height:1}
+.con-hero-sub{font-size:12px;color:var(--text3);margin-top:4px}
+
+/* WEEK GRID */
+.week-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.week-tile{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px 12px;text-align:center}
+.week-tile-val{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--text);margin-bottom:2px}
+.week-tile-label{font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text3)}
+
+/* TREND */
+.trend-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.trend-row:last-child{border-bottom:none}
+.trend-label{font-size:12px;color:var(--text2);flex:1}
+.trend-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+
+/* IMPORT SUMMARY */
+.import-summary-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.import-summary-item:last-child{border-bottom:none}
+.import-summary-icon{font-size:15px;flex-shrink:0}
+.import-summary-text{font-size:13px;color:var(--text);flex:1}
+.import-summary-val{font-family:'DM Mono',monospace;font-size:12px;flex-shrink:0}
+
+/* DROP ZONE */
+.drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:24px 20px;text-align:center;color:var(--text3);cursor:pointer;transition:border-color .15s}
+.drop-zone:active,.drop-zone.drag-over{border-color:var(--amber);color:var(--amber2)}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 18px;font-size:13px;color:var(--text);z-index:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;max-width:90vw}
+.toast.show{opacity:1}
+
+.sec{padding:0 16px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl td{padding:10px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);vertical-align:middle}
+.tbl td:first-child{color:var(--text);font-weight:500}
+.tbl tr:last-child td{border-bottom:none}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">PBSRx COCKPIT</div>
+    <div class="topbar-sub" id="topbar-date"></div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-ghost btn-sm" onclick="showDataMenu()" style="padding:7px 10px;font-size:13px" title="Data">⋯</button>
+    <button class="btn btn-ghost btn-sm" onclick="openAddInventory()" style="padding:7px 12px;font-size:13px">+ Item</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN: COCKPIT ===== -->
+<div class="screen active" id="screen-cockpit">
+  <!-- HERO -->
+  <div class="hero-v2">
+    <div class="hero-label">Recoverable Value</div>
+    <div class="hero-value" id="hero-recoverable" style="color:var(--green)">₦—</div>
+    <div class="hero-sub" id="hero-sub">Tap + Item to begin tracking inventory</div>
+    <div class="hero-progress-row" id="hero-progress-row" style="display:none">
+      <div class="hero-progress-track"><div class="hero-progress-fill" id="hero-progress-fill" style="width:0%"></div></div>
+      <div class="hero-progress-label" id="hero-progress-label">0%</div>
+    </div>
+  </div>
+
+  <div style="padding:10px 16px 0">
+
+    <!-- MORNING BRIEFING -->
+    <div class="briefing-card" id="briefing-card" style="display:none">
+      <div class="briefing-header">
+        <div class="briefing-title">☀ MORNING BRIEFING</div>
+        <div class="briefing-date" id="briefing-date"></div>
+      </div>
+      <div id="briefing-list"></div>
+    </div>
+
+    <!-- ACTION QUEUE -->
+    <div class="focus-card">
+      <div class="focus-header">
+        <div class="focus-header-left">
+          <div class="focus-dot" style="background:var(--red)"></div>
+          <div class="focus-title">ACTION QUEUE</div>
+          <span id="aq-count-badge" style="display:none;font-size:10px;font-weight:700;background:var(--red);color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px"></span>
+        </div>
+        <button onclick="refreshActionQueue()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px 8px">↻</button>
+      </div>
+      <div id="action-queue-list">
+        <div class="aq-item"><div class="aq-icon">👋</div><div class="aq-body"><div class="aq-title">Add inventory to activate your action queue</div><div class="aq-sub">Priorities appear here automatically</div></div></div>
+      </div>
+    </div>
+
+    <!-- PUSH TODAY -->
+    <div class="focus-card" id="push-candidates-card" style="display:none">
+      <div class="focus-header">
+        <div class="focus-header-left"><div class="focus-dot" style="background:var(--green)"></div><div class="focus-title">PUSH TODAY</div></div>
+        <span style="font-size:10px;color:var(--text3)">Best cash movers</span>
+      </div>
+      <div id="push-candidates-list"></div>
+    </div>
+
+    <!-- WEEK TILES -->
+    <div class="week-grid">
+      <div class="week-tile"><div class="week-tile-val" id="wg-items">0</div><div class="week-tile-label">SKUs</div></div>
+      <div class="week-tile"><div class="week-tile-val" id="wg-expiring" style="color:var(--orange)">0</div><div class="week-tile-label">Near Expiry</div></div>
+      <div class="week-tile"><div class="week-tile-val" id="wg-fast" style="color:var(--green)">0</div><div class="week-tile-label">Fast Movers</div></div>
+      <div class="week-tile"><div class="week-tile-val" id="wg-stagnant" style="color:var(--purple)">0</div><div class="week-tile-label">Stagnant/Dead</div></div>
+    </div>
+
+    <!-- DEMAND REAWAKENING -->
+    <div class="card" id="reawaken-card" style="display:none">
+      <div class="card-title" style="display:flex;justify-content:space-between"><span>DEMAND REAWAKENING</span><span style="color:var(--teal);font-size:10px">✦ New signals</span></div>
+      <div id="reawaken-list"></div>
+    </div>
+
+    <!-- MOVEMENT MOMENTUM -->
+    <div class="card" id="momentum-card" style="display:none">
+      <div class="card-title">MOVEMENT MOMENTUM</div>
+      <div id="momentum-list"></div>
+    </div>
+
+    <!-- CONSIGNMENT SNAPSHOT -->
+    <div class="card" id="home-con-card">
+      <div class="card-title">CONSIGNMENT PROGRESS</div>
+      <div id="home-con-empty"><div style="font-size:12px;color:var(--text3);padding:4px 0 6px">No consignment stock tagged yet.</div></div>
+      <div id="home-con-data" style="display:none">
+        <div class="stat-row"><span class="stat-label">Converted</span><span class="stat-value green" id="home-con-converted">₦0</span></div>
+        <div class="stat-row"><span class="stat-label">Outstanding</span><span class="stat-value amber" id="home-con-outstanding">₦0</span></div>
+        <div class="progress-wrap"><div class="progress-bar green" id="home-con-progress" style="width:0%"></div></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px" id="home-con-label"></div>
+      </div>
+    </div>
+
+    <!-- SNAPSHOT TRENDS -->
+    <div class="card" id="snapshot-trends-card" style="display:none">
+      <div class="card-title">OPERATIONAL TRENDS</div>
+      <div id="snapshot-trends-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== SCREEN: INVENTORY ===== -->
+<div class="screen" id="screen-inventory">
+  <div class="search-wrap">
+    <input class="search-input" type="search" id="inv-search" placeholder="Search name, brand, strength..." oninput="renderInventoryList()"/>
+  </div>
+  <div class="sort-bar">
+    <div class="sort-chip active" data-filter="all" onclick="setInvFilter('all',this)">All</div>
+    <div class="sort-chip" data-filter="push" onclick="setInvFilter('push',this)">🚀 Push</div>
+    <div class="sort-chip" data-filter="fast" onclick="setInvFilter('fast',this)">Fast</div>
+    <div class="sort-chip" data-filter="stable" onclick="setInvFilter('stable',this)">Stable</div>
+    <div class="sort-chip" data-filter="slow" onclick="setInvFilter('slow',this)">Slow</div>
+    <div class="sort-chip" data-filter="stagnant" onclick="setInvFilter('stagnant',this)">Stagnant</div>
+    <div class="sort-chip" data-filter="dead" onclick="setInvFilter('dead',this)">Dead</div>
+    <div class="sort-chip" data-filter="consignment" onclick="setInvFilter('consignment',this)">Consignment</div>
+    <div class="sort-chip" data-filter="reorder" onclick="setInvFilter('reorder',this)">🔄 Reorder</div>
+    <div class="sort-chip" data-filter="expiry" onclick="setInvFilter('expiry',this)">⏰ Expiry</div>
+    <div class="sort-chip" data-filter="review" onclick="setInvFilter('review',this)">Review</div>
+  </div>
+  <div id="inventory-list" style="padding:0 16px"></div>
+</div>
+
+<!-- ===== SCREEN: PURCHASING ===== -->
+<div class="screen" id="screen-purchasing">
+  <div class="sec" style="padding-top:14px">
+
+    <!-- WHAT TO ORDER -->
+    <div class="focus-card">
+      <div class="focus-header">
+        <div class="focus-header-left"><div class="focus-dot" style="background:var(--green)"></div><div class="focus-title">ORDER THIS WEEK</div></div>
+        <span style="font-size:10px;color:var(--text3)">High confidence first</span>
+      </div>
+      <div id="order-list">
+        <div class="aq-item"><div class="aq-icon">📊</div><div class="aq-body"><div class="aq-title">Add inventory to generate order intelligence</div></div></div>
+      </div>
+    </div>
+
+    <!-- DO NOT ORDER -->
+    <div class="focus-card">
+      <div class="focus-header">
+        <div class="focus-header-left"><div class="focus-dot" style="background:var(--red)"></div><div class="focus-title">DO NOT ORDER</div></div>
+        <span style="font-size:10px;color:var(--text3)">Capital protection</span>
+      </div>
+      <div id="dont-order-list">
+        <div class="aq-item"><div class="aq-icon">🛡️</div><div class="aq-body"><div class="aq-title">No capital risk items detected</div><div class="aq-sub">Purchasing intelligence activates with inventory data</div></div></div>
+      </div>
+    </div>
+
+    <!-- MICRO RESTOCK TEST -->
+    <div class="focus-card" id="micro-restock-card" style="display:none">
+      <div class="focus-header">
+        <div class="focus-header-left"><div class="focus-dot" style="background:var(--teal)"></div><div class="focus-title">TEST RESTOCK</div></div>
+        <span style="font-size:10px;color:var(--text3)">3–5 units to validate</span>
+      </div>
+      <div id="micro-restock-list"></div>
+    </div>
+
+    <!-- PURCHASING LOOP STATUS -->
+    <div class="card">
+      <div class="card-title">PURCHASING LOOP STATUS</div>
+      <div id="purchasing-loop"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== SCREEN: REQUESTS ===== -->
+<div class="screen" id="screen-requests">
+  <!-- Quick log -->
+  <div style="padding:12px 16px 0">
+    <div class="card">
+      <div class="card-title">LOG CUSTOMER REQUEST</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input class="form-input" id="req-name-input" type="text" placeholder="Product name requested..." style="flex:1"/>
+        <button class="btn btn-primary" style="padding:10px 16px;font-size:13px" onclick="logRequest()">+Log</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select class="form-input form-select" id="req-status-input" style="flex:1;font-size:13px">
+          <option value="never_stocked">Never Stocked</option>
+          <option value="out_of_stock">Out of Stock</option>
+          <option value="previously_stocked">Previously Stocked</option>
+          <option value="discontinued">Discontinued</option>
+          <option value="under_review">Under Review</option>
+        </select>
+        <input class="form-input" id="req-notes-input" type="text" placeholder="Note (optional)" style="flex:1;font-size:13px"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sort chips -->
+  <div class="sort-bar" style="padding-top:0">
+    <div class="sort-chip active" data-rf="all" onclick="setReqFilter('all',this)">All</div>
+    <div class="sort-chip" data-rf="trending" onclick="setReqFilter('trending',this)">🔥 Trending</div>
+    <div class="sort-chip" data-rf="never_stocked" onclick="setReqFilter('never_stocked',this)">Never Stocked</div>
+    <div class="sort-chip" data-rf="out_of_stock" onclick="setReqFilter('out_of_stock',this)">Out of Stock</div>
+    <div class="sort-chip" data-rf="test_restock" onclick="setReqFilter('test_restock',this)">Test Restock</div>
+  </div>
+  <div id="requests-list" style="padding:0 16px"></div>
+</div>
+
+<!-- ===== SCREEN: CONSIGNMENT ===== -->
+<div class="screen" id="screen-consignment">
+  <div class="sec" style="padding-top:14px">
+    <div class="con-hero">
+      <div class="con-hero-label">Inventory Converted</div>
+      <div class="con-hero-value" id="cc-sold">₦0</div>
+      <div class="con-hero-sub" id="cc-sold-sub">Cash recovered from consignment stock</div>
+    </div>
+    <div class="card">
+      <div class="card-title">RECOVERY PROGRESS</div>
+      <div id="con-empty-state" style="display:none"><div class="empty"><div class="empty-icon">📦</div><div class="empty-text">No consignment stock tagged yet.</div></div></div>
+      <div id="con-data-section">
+        <div class="stat-row"><span class="stat-label">Cash Recovered</span><span class="stat-value green" id="cc-paid">₦0</span></div>
+        <div class="stat-row"><span class="stat-label">Profit Retained</span><span class="stat-value green" id="cc-profit">₦0</span></div>
+        <div class="stat-row"><span class="stat-label">Still in Stock</span><span class="stat-value amber" id="cc-unsold">₦0</span></div>
+        <div class="stat-row" style="margin-bottom:4px"><span class="stat-label">Outstanding Balance</span><span class="stat-value muted" id="cc-balance">₦0</span></div>
+        <div class="progress-wrap"><div class="progress-bar green" id="cc-progress" style="width:0%"></div></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px" id="cc-progress-label">Log repayments to track progress</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">RISK EXPOSURE</div>
+      <div class="stat-row"><span class="stat-label">Dead Stock</span><span class="stat-value muted" id="cc-dead">None detected</span></div>
+      <div class="stat-row" style="margin-bottom:0"><span class="stat-label">Near Expiry</span><span class="stat-value muted" id="cc-nearexpiry">None detected</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">LOG REPAYMENT</div>
+      <div class="form-row" style="margin-bottom:10px">
+        <div class="form-group" style="margin:0"><label class="form-label">Amount (₦)</label><input class="form-input" type="number" id="rep-amount" placeholder="0"/></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Date</label><input class="form-input" type="date" id="rep-date"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Note (optional)</label><input class="form-input" type="text" id="rep-note" placeholder="e.g. Cash to Emzor rep"/></div>
+      <button class="btn btn-primary btn-block" onclick="logRepayment()">Log Repayment</button>
+    </div>
+    <div class="card-title" style="padding:0;margin-bottom:8px">REPAYMENT HISTORY</div>
+    <div class="card" style="padding:0 0 4px"><div id="repayment-history" style="padding:0 16px"><div class="ledger-row"><span style="font-size:12px;color:var(--text3)">No repayments logged yet</span></div></div></div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: WEEKLY REVIEW ===== -->
+<div class="screen" id="screen-weekly">
+  <div class="sec" style="padding-top:14px">
+    <div class="card-title" style="padding:0;margin-bottom:12px">WEEKLY REVIEW</div>
+    <div class="card">
+      <div class="card-title">INVENTORY HEALTH</div>
+      <div class="stat-row"><span class="stat-label">Total SKUs</span><span class="stat-value" id="wr-skus">0</span></div>
+      <div class="stat-row"><span class="stat-label">Stock Value</span><span class="stat-value amber" id="wr-value">—</span></div>
+      <div class="stat-row"><span class="stat-label">Recoverable Value</span><span class="stat-value green" id="wr-recoverable">—</span></div>
+      <div class="stat-row"><span class="stat-label">Trapped Capital</span><span class="stat-value muted" id="wr-trapped">None ✓</span></div>
+      <div class="stat-row" style="margin-bottom:0"><span class="stat-label">Consignment Outstanding</span><span class="stat-value muted" id="wr-con-out">None ✓</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">CASH CONVERSION RANKING</div>
+      <div id="wr-cash-intel"><div style="font-size:12px;color:var(--text3)">Add inventory to generate intelligence.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">MOVEMENT BREAKDOWN</div>
+      <div id="wr-movement-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">OVERSTOCK EXPOSURE</div>
+      <div id="wr-overstock"><div style="font-size:12px;color:var(--text3)">None detected ✓</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">EXPIRY EXPOSURE</div>
+      <div class="stat-row"><span class="stat-label">&lt;90 Days</span><span class="stat-value red" id="wr-exp90">None ✓</span></div>
+      <div class="stat-row"><span class="stat-label">90–180 Days</span><span class="stat-value" style="color:var(--orange)" id="wr-exp180">None ✓</span></div>
+      <div class="stat-row" style="margin-bottom:0"><span class="stat-label">&gt;180 Days</span><span class="stat-value green" id="wr-exp180p">—</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">TOP STAGNANT / HIGH VALUE</div>
+      <div id="wr-stagnant-list"><div style="font-size:12px;color:var(--text3)">None detected ✓</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">REPAYMENT PROGRESS</div>
+      <div class="stat-row"><span class="stat-label">Total Paid</span><span class="stat-value green" id="wr-paid">₦0</span></div>
+      <div class="stat-row" style="margin-bottom:6px"><span class="stat-label">Outstanding</span><span class="stat-value muted" id="wr-outstanding">None ✓</span></div>
+      <div class="progress-wrap"><div class="progress-bar green" id="wr-progress" style="width:0%"></div></div>
+    </div>
+    <div class="card" id="wr-snapshots-card" style="display:none">
+      <div class="card-title">OPERATIONAL TRENDS (7 DAYS)</div>
+      <div id="wr-snapshot-trends"></div>
+    </div>
+    <!-- Customer Requests Summary -->
+    <div class="card" id="wr-requests-card" style="display:none">
+      <div class="card-title">CUSTOMER REQUEST SIGNALS</div>
+      <div id="wr-requests-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: IMPORT ===== -->
+<div class="screen" id="screen-import">
+  <div class="sec" style="padding-top:14px">
+    <div class="card">
+      <div class="card-title">IMPORT SALES DATA</div>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()">
+        <div style="font-size:24px;margin-bottom:8px">📂</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:4px">Tap to upload CSV</div>
+        <div style="font-size:11px">Columns: Product Name, Qty Sold, Date, Selling Price</div>
+        <div style="font-size:11px;margin-top:3px;color:var(--text3)">PBSRx · QuickBooks · Manual exports</div>
+      </div>
+      <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSVUpload(event)"/>
+    </div>
+    <div id="csv-preview-wrap" style="display:none">
+      <div class="card-title" style="padding:0;margin-bottom:8px">IMPORT PREVIEW</div>
+      <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table class="tbl" id="csv-preview-table"></table></div></div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn btn-primary" style="flex:1" onclick="confirmImport()">Confirm Import</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="cancelImport()">Cancel</button>
+      </div>
+    </div>
+    <div id="import-summary-wrap" style="display:none">
+      <div class="card-title" style="padding:0;margin-bottom:8px">IMPORT SUMMARY</div>
+      <div class="card"><div id="import-summary-list"></div></div>
+    </div>
+    <div style="margin-top:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="card-title" style="padding:0;margin:0">NEEDS REVIEW</div>
+        <span id="review-count" style="color:var(--amber);font-size:12px;font-weight:600"></span>
+      </div>
+      <div id="review-list"><div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No items need review.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item active" onclick="navigate('cockpit')" id="nav-cockpit">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Cockpit<span class="nav-badge" id="nav-aq-badge" style="display:none">0</span>
+  </div>
+  <div class="nav-item" onclick="navigate('inventory')" id="nav-inventory">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    Inventory
+  </div>
+  <div class="nav-item" onclick="navigate('purchasing')" id="nav-purchasing">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    Buy
+  </div>
+  <div class="nav-item" onclick="navigate('requests')" id="nav-requests">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Requests<span class="nav-badge" id="nav-req-badge" style="display:none">0</span>
+  </div>
+  <div class="nav-item" onclick="navigate('consignment')" id="nav-consignment">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    Consign
+  </div>
+  <div class="nav-item" onclick="navigate('weekly')" id="nav-weekly">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Review
+  </div>
+</nav>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- ADD/EDIT INVENTORY -->
+<div class="modal-overlay" id="modal-inventory">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="inv-modal-title">ADD ITEM</div>
+    <input type="hidden" id="inv-edit-id"/>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Product Name *</label><input class="form-input" id="inv-name" type="text" placeholder="e.g. Amoxicillin"/></div>
+      <div class="form-group"><label class="form-label">Brand</label><input class="form-input" id="inv-brand" type="text" placeholder="e.g. Beecham"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Strength/Form</label><input class="form-input" id="inv-strength" type="text" placeholder="500mg Cap"/></div>
+      <div class="form-group"><label class="form-label">Batch No.</label><input class="form-input" id="inv-batch" type="text" placeholder="BN2024"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Quantity *</label><input class="form-input" id="inv-qty" type="number" placeholder="0" min="0"/></div>
+      <div class="form-group"><label class="form-label">Expiry Date</label><input class="form-input" id="inv-expiry" type="date"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cost Price (₦) *</label><input class="form-input" id="inv-cost" type="number" placeholder="0" min="0"/></div>
+      <div class="form-group"><label class="form-label">Selling Price (₦) *</label><input class="form-input" id="inv-sell" type="number" placeholder="0" min="0"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Ownership</label>
+        <select class="form-input form-select" id="inv-ownership">
+          <option value="own">Own Stock</option><option value="consignment">Consignment</option><option value="mixed">Mixed</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Movement</label>
+        <select class="form-input form-select" id="inv-movement">
+          <option value="stable">Stable</option><option value="fast">Fast</option><option value="slow">Slow</option><option value="stagnant">Stagnant</option><option value="dead">Dead</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Intake Date</label><input class="form-input" id="inv-intake" type="date"/></div>
+      <div class="form-group"><label class="form-label">Last Movement</label><input class="form-input" id="inv-lastmove" type="date"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="inv-notes" type="text" placeholder="Optional notes"/></div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveInventoryItem()">Save Item</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modal-inventory')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM DETAIL -->
+<div class="modal-overlay" id="modal-item-detail">
+  <div class="modal-sheet"><div id="item-detail-content"></div></div>
+</div>
+
+<!-- QUICK ACTIONS -->
+<div class="modal-overlay" id="modal-quickadjust">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="qa-title">QUICK ACTIONS</div>
+    <div id="qa-body"></div>
+  </div>
+</div>
+
+<!-- DATA MENU -->
+<div class="modal-overlay" id="modal-data">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">DATA & BACKUP</div>
+    <div class="qa-grid" style="margin-bottom:16px">
+      <div class="qa-action" onclick="exportData()"><div class="qa-action-icon">⬇️</div><div class="qa-action-label">Export Backup</div></div>
+      <div class="qa-action" onclick="document.getElementById('import-backup-file').click()"><div class="qa-action-icon">⬆️</div><div class="qa-action-label">Restore Backup</div></div>
+      <div class="qa-action" onclick="exportCSVInventory()"><div class="qa-action-icon">📊</div><div class="qa-action-label">Export CSV</div></div>
+      <div class="qa-action" onclick="clearActionQueue()"><div class="qa-action-icon">🔄</div><div class="qa-action-label">Reset Queue</div></div>
+    </div>
+    <div class="qa-action" onclick="closeModal('modal-data');navigate('import')" style="grid-column:span 2"><div class="qa-action-icon">📂</div><div class="qa-action-label">Import Sales CSV</div></div>
+    <input type="file" id="import-backup-file" accept=".json" style="display:none" onchange="importData(event)"/>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:16px">Exports all inventory, repayments, requests and snapshots as JSON</div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('modal-data')">Close</button>
+  </div>
+</div>
+
+<!-- REQUEST DETAIL -->
+<div class="modal-overlay" id="modal-request-detail">
+  <div class="modal-sheet"><div id="request-detail-content"></div></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DB
+// ============================================================
+let db;
+const DB_NAME='pbsrx_cockpit',DB_VER=4;
+function initDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      ['inventory','sales_imports','repayment_logs','weekly_snapshots','action_queue','daily_snapshots','customer_requests'].forEach(s=>{
+        if(!d.objectStoreNames.contains(s)) d.createObjectStore(s,{keyPath:'id'});
+      });
+    };
+    req.onsuccess=e=>{db=e.target.result;res(db)};
+    req.onerror=e=>rej(e.target.error);
+  });
+}
+const dbGetAll=s=>new Promise((r,j)=>{const t=db.transaction(s,'readonly'),q=t.objectStore(s).getAll();q.onsuccess=()=>r(q.result||[]);q.onerror=()=>j(q.error)});
+const dbPut=(s,i)=>new Promise((r,j)=>{const t=db.transaction(s,'readwrite'),q=t.objectStore(s).put(i);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)});
+const dbDelete=(s,id)=>new Promise((r,j)=>{const t=db.transaction(s,'readwrite'),q=t.objectStore(s).delete(id);q.onsuccess=()=>r();q.onerror=()=>j(q.error)});
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+// ============================================================
+// STATE
+// ============================================================
+let inventoryCache=[],repaymentsCache=[],requestsCache=[],importsCache=[];
+let invFilter='all',reqFilter='all',pendingCSV=[],quickAdjustItem=null;
+const saveSession=(k,v)=>{try{localStorage.setItem('pbsrx_'+k,JSON.stringify(v));}catch(e){}};
+const loadSession=(k,d)=>{try{const v=localStorage.getItem('pbsrx_'+k);return v?JSON.parse(v):d;}catch(e){return d;}};
+
+// ============================================================
+// MOVEMENT ENGINE — Behavior-Aware
+// ============================================================
+function computeMovementScore(item){
+  const lm=item.lastMovementDate||item.intakeDate;
+  const daysInactive=lm?Math.max(0,Math.ceil((Date.now()-new Date(lm))/(864e5))):999;
+  const qtyMoved=Math.max(0,(item.originalQty||item.qty||0)-(item.qty||0));
+  const daysTracked=item.intakeDate?Math.max(1,Math.ceil((Date.now()-new Date(item.intakeDate))/(864e5))):30;
+  const velocity=daysTracked>0?qtyMoved/daysTracked:0;
+  if(velocity>=2&&daysInactive<=14) return 'fast';
+  if(velocity>=0.5&&daysInactive<=21) return 'stable';
+  if(daysInactive<=7&&qtyMoved>0) return 'fast';
+  if(daysInactive<=21) return 'stable';
+  if(daysInactive<=45) return 'slow';
+  if(daysInactive<=90) return 'stagnant';
+  return 'dead';
+}
+
+function computeVelocity(item){
+  const qtyMoved=Math.max(0,(item.originalQty||item.qty||0)-(item.qty||0));
+  const daysTracked=item.intakeDate?Math.max(1,Math.ceil((Date.now()-new Date(item.intakeDate))/(864e5))):30;
+  return qtyMoved/daysTracked;
+}
+
+function lastMoveLabel(item){
+  const d=item.lastMovementDate||item.intakeDate;
+  if(!d) return null;
+  const days=Math.max(0,Math.ceil((Date.now()-new Date(d))/(864e5)));
+  if(days<=1) return {label:'Active today',cls:''};
+  if(days<=3) return {label:`Last move: ${days}d ago`,cls:''};
+  if(days<=14) return {label:`Last move: ${days}d ago`,cls:''};
+  if(days<=30) return {label:`Inactive ${days}d`,cls:'urgent'};
+  return {label:`Inactive ${days}d`,cls:'dead-time'};
+}
+
+// ============================================================
+// PUSH SCORE ENGINE — Enhanced
+// ============================================================
+function computePushScore(item,repayments){
+  let score=0;
+  const val=(item.costPrice||0)*(item.qty||0);
+  const sellVal=(item.sellPrice||0)*(item.qty||0);
+  const margin=item.sellPrice&&item.costPrice&&item.sellPrice>0?(item.sellPrice-item.costPrice)/item.sellPrice:0;
+  const days=daysUntilExpiry(item.expiryDate);
+  const daysInactive=item.lastMovementDate?Math.max(0,Math.ceil((Date.now()-new Date(item.lastMovementDate))/(864e5))):60;
+  const velocity=computeVelocity(item);
+  const conPressure=(repayments||[]).length===0&&(item.ownership==='consignment'||item.ownership==='mixed');
+
+  // Margin score (30pts max)
+  if(margin>=0.35) score+=30;
+  else if(margin>=0.25) score+=20;
+  else if(margin>=0.15) score+=10;
+
+  // Stock value (25pts max)
+  if(val>100000) score+=25;
+  else if(val>50000) score+=20;
+  else if(val>20000) score+=12;
+  else if(val>5000) score+=6;
+
+  // Expiry urgency (25pts max)
+  if(days!==null&&days<=30&&days>=0) score+=25;
+  else if(days!==null&&days<=60&&days>=0) score+=18;
+  else if(days!==null&&days<=90&&days>=0) score+=10;
+
+  // Movement state (15pts)
+  if(item.movement==='stagnant') score+=15;
+  else if(item.movement==='slow') score+=10;
+
+  // Consignment repayment pressure (10pts)
+  if(conPressure) score+=10;
+
+  // Velocity bonus - if it's actually moving, more urgency
+  if(velocity>0.5) score+=5;
+
+  return {score,val,sellVal,margin};
+}
+
+// ============================================================
+// DEMAND INTELLIGENCE — Order / Don't Order
+// ============================================================
+function computeOrderIntel(inventory,imports){
+  const now=Date.now();
+  const week1=imports.filter(i=>(now-new Date(i.date||i.createdAt||now).getTime())<7*864e5);
+  const month1=imports.filter(i=>(now-new Date(i.date||i.createdAt||now).getTime())<30*864e5);
+
+  const w1Map={},m1Map={};
+  week1.forEach(i=>{w1Map[i.productId]=(w1Map[i.productId]||0)+(i.qtySold||0);});
+  month1.forEach(i=>{m1Map[i.productId]=(m1Map[i.productId]||0)+(i.qtySold||0);});
+
+  const orderList=[];
+  const dontOrderList=[];
+  const microRestockList=[];
+
+  for(const item of inventory){
+    const qty=item.qty||0;
+    const vel=computeVelocity(item);
+    const daysLeft=vel>0?Math.floor(qty/vel):999;
+    const w1sold=w1Map[item.id]||0;
+    const m1sold=m1Map[item.id]||0;
+    const margin=item.sellPrice&&item.costPrice&&item.sellPrice>0?(item.sellPrice-item.costPrice)/item.sellPrice:0;
+    const val=(item.costPrice||0)*qty;
+    const expDays=daysUntilExpiry(item.expiryDate);
+
+    // DO NOT ORDER logic
+    if((item.movement==='stagnant'||item.movement==='dead')&&qty>20&&val>10000){
+      dontOrderList.push({item,reason:`${fmtNum(qty)} units already stagnant`,val,priority:'high'});
+      continue;
+    }
+    if(expDays!==null&&expDays<=90&&qty>10){
+      dontOrderList.push({item,reason:`${expDays}d to expiry — clear existing first`,val,priority:'high'});
+      continue;
+    }
+    if(item.movement==='slow'&&qty>30&&m1sold<5){
+      dontOrderList.push({item,reason:'Slow movement with high existing stock',val,priority:'med'});
+      continue;
+    }
+
+    // ORDER logic
+    let confidence='low',reasons=[],urgency=0;
+    if(daysLeft<=7&&daysLeft>=0&&(item.movement==='fast'||item.movement==='stable')){
+      confidence='high';reasons.push(`~${daysLeft}d stock remaining`);urgency=3;
+    } else if(daysLeft<=14&&item.movement==='fast'){
+      confidence='high';reasons.push(`~${daysLeft}d stock at current velocity`);urgency=2;
+    } else if(daysLeft<=21&&w1sold>0){
+      confidence='mod';reasons.push(`${w1sold} units sold this week`);urgency=1;
+    } else if(m1sold>=10&&qty<20){
+      confidence='mod';reasons.push(`${m1sold} units/month demand`);urgency=1;
+    }
+
+    if(item.movement==='fast'&&qty<=5){
+      confidence='high';reasons.push('Fast mover running low');urgency=3;
+    }
+    if(margin>=0.3) reasons.push(`${Math.round(margin*100)}% margin`);
+
+    if(urgency>0){
+      orderList.push({item,confidence,reasons,urgency,daysLeft:daysLeft<999?daysLeft:null,vel});
+    }
+
+    // MICRO RESTOCK — low confidence recurring
+    if(m1sold>=3&&m1sold<10&&qty<=5&&item.movement!=='dead'){
+      microRestockList.push({item,m1sold,reason:`${m1sold} units/month, low stock`});
+    }
+  }
+
+  return {
+    order:orderList.sort((a,b)=>b.urgency-a.urgency).slice(0,8),
+    dontOrder:dontOrderList.sort((a,b)=>b.val-a.val).slice(0,6),
+    microRestock:microRestockList.slice(0,5)
+  };
+}
+
+// ============================================================
+// REORDER INTELLIGENCE
+// ============================================================
+function computeReorderIntel(inventory){
+  return inventory.filter(item=>{
+    if((item.qty||0)>5) return false;
+    return item.movement==='fast'||item.movement==='stable';
+  }).map(item=>{
+    const vel=computeVelocity(item);
+    const daysLeft=vel>0?Math.floor((item.qty||0)/vel):999;
+    return {item,daysLeft:daysLeft<999?daysLeft:null,velocity:vel.toFixed(1)};
+  }).filter(r=>r.daysLeft!==null&&r.daysLeft<=14)
+    .sort((a,b)=>a.daysLeft-b.daysLeft).slice(0,6);
+}
+
+// ============================================================
+// DEMAND REAWAKENING
+// ============================================================
+async function detectReawakening(inventory){
+  importsCache=await dbGetAll('sales_imports');
+  const now=Date.now();
+  const recent=importsCache.filter(i=>(now-new Date(i.date||i.createdAt||now).getTime())<14*864e5);
+  const older=importsCache.filter(i=>{const d=now-new Date(i.date||i.createdAt||now).getTime();return d>=30*864e5&&d<90*864e5;});
+
+  const recentMap={},olderMap={};
+  recent.forEach(i=>{recentMap[i.productId]=(recentMap[i.productId]||0)+(i.qtySold||0);});
+  older.forEach(i=>{olderMap[i.productId]=(olderMap[i.productId]||0)+(i.qtySold||0);});
+
+  const signals=[];
+  for(const item of inventory){
+    const recentSales=recentMap[item.id]||0;
+    const olderSales=olderMap[item.id]||0;
+    const daysInactive=item.lastMovementDate?Math.max(0,Math.ceil((now-new Date(item.lastMovementDate))/(864e5))):90;
+
+    // Was inactive/stagnant but now showing activity
+    if(recentSales>=3&&olderSales===0&&daysInactive>30){
+      signals.push({item,type:'reawaken',label:`${item.name} — demand returning after inactivity`,sub:`${recentSales} units moved recently after ${daysInactive}d quiet`});
+    } else if(recentSales>olderSales*2&&recentSales>=3){
+      signals.push({item,type:'accelerating',label:`${item.name} demand accelerating`,sub:`${olderSales} last month → ${recentSales} this fortnight`});
+    }
+  }
+  return signals.slice(0,4);
+}
+
+// ============================================================
+// MOMENTUM DETECTION
+// ============================================================
+async function detectMomentum(inventory){
+  const imports=await dbGetAll('sales_imports');
+  const now=Date.now();
+  const week1=imports.filter(i=>(now-new Date(i.date||i.createdAt||now).getTime())<7*864e5);
+  const week2=imports.filter(i=>{const d=now-new Date(i.date||i.createdAt||now).getTime();return d>=7*864e5&&d<14*864e5;});
+  const w1Map={},w2Map={};
+  week1.forEach(i=>{w1Map[i.productId]=(w1Map[i.productId]||0)+(i.qtySold||0);});
+  week2.forEach(i=>{w2Map[i.productId]=(w2Map[i.productId]||0)+(i.qtySold||0);});
+  const momentum=[];
+  for(const item of inventory){
+    const w1=w1Map[item.id]||0,w2=w2Map[item.id]||0;
+    if(w1===0&&w2===0) continue;
+    if(w1>0&&w2===0&&w1>=3) momentum.push({item,type:'new_active',w1,w2,sub:`${w1} units this week`});
+    else if(w1>w2*1.5&&w1>=3) momentum.push({item,type:'accelerating',w1,w2,sub:`${w2}→${w1} units wk/wk`});
+    else if(w2>w1*1.5&&w2>=3) momentum.push({item,type:'slowing',w1,w2,sub:`${w2}→${w1} units wk/wk`});
+  }
+  return momentum.slice(0,4);
+}
+
+// ============================================================
+// MORNING BRIEFING
+// ============================================================
+function buildMorningBriefing(inventory,repayments,requests){
+  const briefing=[];
+  let trapped=0,nearExpiry=0,reorderCount=0;
+  const mv={fast:0,stagnant:0,dead:0};
+
+  inventory.forEach(item=>{
+    const val=(item.costPrice||0)*(item.qty||0);
+    const m=item.movement||'stable';
+    if(m==='fast') mv.fast++;
+    if(m==='stagnant') mv.stagnant++;
+    if(m==='dead') mv.dead++;
+    if(m==='slow'||m==='stagnant'||m==='dead') trapped+=val;
+    const d=daysUntilExpiry(item.expiryDate);
+    if(d!==null&&d<=60&&d>=0) nearExpiry++;
+  });
+
+  const reorders=computeReorderIntel(inventory);
+  reorderCount=reorders.length;
+
+  const conItems=inventory.filter(i=>i.ownership==='consignment'||i.ownership==='mixed');
+  const conTotal=conItems.reduce((s,i)=>s+(i.originalQty||i.qty||0)*(i.costPrice||0),0);
+  const paid=repayments.reduce((s,r)=>s+(r.amount||0),0);
+  const conBalance=Math.max(0,conTotal-paid);
+
+  const trending=(requests||[]).filter(r=>r.count>=3&&r.status!=='dismissed').length;
+
+  if(nearExpiry>0) briefing.push({dot:'var(--red)',text:`${nearExpiry} item${nearExpiry>1?'s':''} with expiry risk within 60 days`,val:nearExpiry+'!'});
+  if(reorderCount>0) briefing.push({dot:'var(--blue)',text:`${reorderCount} product${reorderCount>1?'s':''} need${reorderCount===1?'s':''} restocking`,val:reorderCount+' items'});
+  if(trapped>50000) briefing.push({dot:'var(--orange)',text:`${fmt(trapped)} in trapped capital`,val:fmt(trapped)});
+  if(conBalance>0) briefing.push({dot:'var(--amber)',text:`${fmt(conBalance)} consignment outstanding`,val:fmt(conBalance)});
+  if(mv.fast>0) briefing.push({dot:'var(--green)',text:`${mv.fast} fast-moving product${mv.fast>1?'s':''} active`,val:`${mv.fast} movers`});
+  if(trending>0) briefing.push({dot:'var(--teal)',text:`${trending} recurring customer request${trending>1?'s':''}`,val:`${trending} signals`});
+
+  return briefing.slice(0,5);
+}
+
+// ============================================================
+// ACTION QUEUE ENGINE — With Chains
+// ============================================================
+async function buildActionQueue(inventory,repayments){
+  const existing=await dbGetAll('action_queue');
+  const todayStr=todayISO();
+  // Expire stale snoozes
+  for(const a of existing){
+    if(a.status==='snoozed_today'&&a.snoozeDate!==todayStr) await dbDelete('action_queue',a.id);
+  }
+  const fresh=await dbGetAll('action_queue');
+  const dismissedIds=new Set(fresh.filter(a=>a.status==='done'||a.status==='snoozed_today').map(a=>a.ruleId));
+  const existingRuleIds=new Set(fresh.filter(a=>a.status==='pending').map(a=>a.ruleId));
+
+  const actions=[];
+
+  // Rule: Near-expiry
+  const urgentExp=inventory.filter(i=>{const d=daysUntilExpiry(i.expiryDate);return d!==null&&d<=60&&d>=0;}).sort((a,b)=>new Date(a.expiryDate)-new Date(b.expiryDate));
+  if(urgentExp.length&&!dismissedIds.has('exp_urgent')&&!existingRuleIds.has('exp_urgent')){
+    const val=urgentExp.reduce((s,i)=>s+(i.costPrice||0)*(i.qty||0),0);
+    const top=urgentExp[0];
+    actions.push({id:uid(),ruleId:'exp_urgent',priority:'high',icon:'⏰',title:`Move ${top.name} — expires in ${daysUntilExpiry(top.expiryDate)}d`,sub:`${urgentExp.length} near-expiry item${urgentExp.length>1?'s':''} · ${fmt(val)} at risk`,chain:'→ After moving: mark handled and check remaining exposure',badge:fmt(val),badgeCls:'high',status:'pending',createdAt:Date.now(),targetId:top.id,action:'open_item'});
+  }
+
+  // Rule: Stagnant high-value
+  const stagnant=inventory.filter(i=>(i.movement==='stagnant'||i.movement==='dead')&&(i.costPrice||0)*(i.qty||0)>5000).sort((a,b)=>((b.costPrice||0)*(b.qty||0))-((a.costPrice||0)*(a.qty||0)));
+  if(stagnant.length&&!dismissedIds.has('stagnant_hv')&&!existingRuleIds.has('stagnant_hv')){
+    const val=stagnant.reduce((s,i)=>s+(i.costPrice||0)*(i.qty||0),0);
+    actions.push({id:uid(),ruleId:'stagnant_hv',priority:'high',icon:'🧊',title:`Review ${stagnant.length} stagnant product${stagnant.length>1?'s':''}`,sub:`${fmt(val)} in trapped capital — consider price action or bundling`,chain:'→ After pushing: monitor movement · if improving, hold reorder',badge:fmt(val),badgeCls:'high',status:'pending',createdAt:Date.now(),action:'filter_stagnant'});
+  }
+
+  // Rule: Consignment repayment
+  const conItems=inventory.filter(i=>i.ownership==='consignment'||i.ownership==='mixed');
+  if(conItems.length){
+    const conTotal=conItems.reduce((s,i)=>s+(i.originalQty||i.qty||0)*(i.costPrice||0),0);
+    const paid=repayments.reduce((s,r)=>s+(r.amount||0),0);
+    const balance=Math.max(0,conTotal-paid);
+    if(balance>0&&!dismissedIds.has('con_repay')&&!existingRuleIds.has('con_repay')){
+      actions.push({id:uid(),ruleId:'con_repay',priority:'med',icon:'💳',title:'Log consignment repayment',sub:`${fmt(balance)} outstanding · ${repayments.length===0?'No payments yet':'Last: '+[...repayments].sort((a,b)=>b.createdAt-a.createdAt)[0]?.date}`,chain:'→ Regular repayments reduce exposure and build supplier trust',badge:fmt(balance),badgeCls:'med',status:'pending',createdAt:Date.now(),action:'goto_consignment'});
+    }
+  }
+
+  // Rule: Reorder candidates
+  const reorders=computeReorderIntel(inventory);
+  if(reorders.length&&!dismissedIds.has('reorder')&&!existingRuleIds.has('reorder')){
+    actions.push({id:uid(),ruleId:'reorder',priority:'med',icon:'🔄',title:`${reorders.length} item${reorders.length>1?'s':''} running low`,sub:reorders.slice(0,2).map(r=>r.item.name).join(', ')+(reorders.length>2?` +${reorders.length-2} more`:''),chain:'→ Check Buy tab for order recommendations and confidence ratings',badge:`${reorders.length} items`,badgeCls:'med',status:'pending',createdAt:Date.now(),action:'goto_purchasing'});
+  }
+
+  // Rule: Push today (top candidate)
+  const allPushScores=inventory.filter(i=>(i.qty||0)>0).map(i=>({item:i,ps:computePushScore(i,repayments)})).filter(x=>x.ps.score>=40).sort((a,b)=>b.ps.score-a.ps.score);
+  if(allPushScores.length&&!dismissedIds.has('push_today')&&!existingRuleIds.has('push_today')){
+    const top=allPushScores[0].item;
+    const m=top.sellPrice&&top.costPrice?Math.round(((top.sellPrice-top.costPrice)/top.sellPrice)*100):0;
+    actions.push({id:uid(),ruleId:'push_today',priority:'low',icon:'🚀',title:`Push ${top.name} today`,sub:`${m}% margin · ${fmtNum(top.qty)} units · best cash mover`,chain:'→ After sales: update qty and check if restock is needed',badge:`${m}%`,badgeCls:'low',status:'pending',createdAt:Date.now(),targetId:top.id,action:'open_item'});
+  }
+
+  // Rule: Trending customer requests
+  const trendingReqs=(requestsCache||[]).filter(r=>r.count>=4&&r.status!=='dismissed'&&r.status!=='stocked');
+  if(trendingReqs.length&&!dismissedIds.has('req_trending')&&!existingRuleIds.has('req_trending')){
+    const top=trendingReqs.sort((a,b)=>b.count-a.count)[0];
+    actions.push({id:uid(),ruleId:'req_trending',priority:'med',icon:'💬',title:`${top.name} requested ${top.count}× — consider stocking`,sub:`${trendingReqs.length} product${trendingReqs.length>1?'s':''} with recurring demand`,chain:'→ Check Requests tab · consider micro restock test',badge:`${top.count}×`,badgeCls:'med',status:'pending',createdAt:Date.now(),action:'goto_requests'});
+  }
+
+  for(const a of actions) await dbPut('action_queue',a);
+  return (await dbGetAll('action_queue')).filter(a=>a.status==='pending').sort((a,b)=>{const p={high:3,med:2,low:1};return(p[b.priority]||0)-(p[a.priority]||0);});
+}
+
+async function resolveAction(id,status){
+  const all=await dbGetAll('action_queue');
+  const item=all.find(a=>a.id===id);
+  if(!item) return;
+  await dbPut('action_queue',{...item,status,snoozeDate:status==='snoozed_today'?todayISO():undefined,resolvedAt:Date.now()});
+  refreshCockpit();
+}
+
+async function executeAction(action,targetId){
+  if(action==='open_item'&&targetId) openItemDetail(targetId);
+  else if(action==='filter_stagnant'){navigate('inventory');setTimeout(()=>{const el=document.querySelector('[data-filter="stagnant"]');setInvFilter('stagnant',el);},50);}
+  else if(action==='filter_reorder'){navigate('inventory');setTimeout(()=>{const el=document.querySelector('[data-filter="reorder"]');setInvFilter('reorder',el);},50);}
+  else if(action==='goto_consignment') navigate('consignment');
+  else if(action==='goto_purchasing') navigate('purchasing');
+  else if(action==='goto_requests') navigate('requests');
+}
+
+// ============================================================
+// DAILY SNAPSHOT
+// ============================================================
+async function takeDailySnapshot(inventory,repayments){
+  const key=todayISO();
+  const existing=await dbGetAll('daily_snapshots');
+  if(existing.find(s=>s.id===key)) return;
+  let totalValue=0,trapped=0,recoverable=0,conTotal=0,exp90val=0;
+  inventory.forEach(i=>{
+    const val=(i.costPrice||0)*(i.qty||0);
+    const sellVal=(i.sellPrice||0)*(i.qty||0);
+    totalValue+=val;
+    if(i.movement==='slow'||i.movement==='stagnant'||i.movement==='dead') trapped+=val;
+    if(i.movement==='fast'||i.movement==='stable') recoverable+=sellVal;
+    else if(i.movement==='slow') recoverable+=sellVal*0.7;
+    if(i.ownership==='consignment'||i.ownership==='mixed') conTotal+=(i.originalQty||i.qty||0)*(i.costPrice||0);
+    const d=daysUntilExpiry(i.expiryDate);
+    if(d!==null&&d<=90&&d>=0) exp90val+=val;
+  });
+  const paid=repayments.reduce((s,r)=>s+(r.amount||0),0);
+  await dbPut('daily_snapshots',{id:key,date:key,totalValue,trapped,recoverable,conTotal,paid,exp90val,skus:inventory.length,ts:Date.now()});
+}
+
+async function getSnapshotTrends(){
+  const snaps=(await dbGetAll('daily_snapshots')).sort((a,b)=>a.date.localeCompare(b.date));
+  if(snaps.length<2) return null;
+  const latest=snaps[snaps.length-1],prev=snaps[snaps.length-2];
+  return {trapped:{now:latest.trapped,prev:prev.trapped},recoverable:{now:latest.recoverable,prev:prev.recoverable},exp90:{now:latest.exp90val,prev:prev.exp90val},paid:{now:latest.paid,prev:prev.paid}};
+}
+
+// ============================================================
+// PURCHASING LOOP STATUS
+// ============================================================
+function computePurchasingLoop(inventory){
+  const total=inventory.length||1;
+  const mv={fast:0,stable:0,slow:0,stagnant:0,dead:0};
+  inventory.forEach(i=>{const m=i.movement||'stable';if(mv[m]!==undefined)mv[m]++;});
+  const healthPct=Math.round(((mv.fast+mv.stable)/total)*100);
+  const trapPct=Math.round(((mv.stagnant+mv.dead)/total)*100);
+  let status='';let statusColor='var(--green)';
+  if(trapPct>=40){status='⚠ High trapped capital — focus on movement, hold purchases';statusColor='var(--red)';}
+  else if(trapPct>=20){status='Moderate stagnation — selective purchasing only';statusColor='var(--orange)';}
+  else if(healthPct>=60){status='Healthy movement loop — reorder fast movers';statusColor='var(--green)';}
+  else{status='Building momentum — monitor before purchasing';statusColor='var(--amber)';}
+  return {mv,healthPct,trapPct,status,statusColor};
+}
+
+// ============================================================
+// CUSTOMER REQUESTS ENGINE
+// ============================================================
+async function logRequest(){
+  const name=document.getElementById('req-name-input')?.value?.trim();
+  if(!name){showToast('Enter a product name');return;}
+  const status=document.getElementById('req-status-input')?.value||'never_stocked';
+  const notes=document.getElementById('req-notes-input')?.value?.trim()||'';
+
+  requestsCache=await dbGetAll('customer_requests');
+  // Find existing by name (fuzzy)
+  const existing=requestsCache.find(r=>normName(r.name)===normName(name));
+  if(existing){
+    const updated={...existing,count:(existing.count||1)+1,lastRequestDate:todayISO(),updatedAt:Date.now()};
+    if(notes) updated.notes=notes;
+    await dbPut('customer_requests',updated);
+    showToast(`${name} — now requested ${updated.count}×`);
+  } else {
+    await dbPut('customer_requests',{id:uid(),name,status,notes,count:1,firstRequestDate:todayISO(),lastRequestDate:todayISO(),createdAt:Date.now(),updatedAt:Date.now()});
+    showToast(`Request logged: ${name}`);
+  }
+  document.getElementById('req-name-input').value='';
+  document.getElementById('req-notes-input').value='';
+  renderRequestsList();
+  updateRequestBadge();
+}
+
+async function renderRequestsList(){
+  requestsCache=await dbGetAll('customer_requests');
+  let items=[...requestsCache].filter(r=>r.status!=='dismissed');
+
+  if(reqFilter==='trending') items=items.filter(r=>r.count>=3);
+  else if(reqFilter==='test_restock') items=items.filter(r=>r.status==='test_restock');
+  else if(reqFilter!=='all') items=items.filter(r=>r.status===reqFilter);
+
+  items.sort((a,b)=>(b.count||0)-(a.count||0));
+
+  const el=document.getElementById('requests-list');
+  if(!items.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">No customer requests logged.<br>Use the form above to track demand.</div></div>';
+    return;
+  }
+
+  const statusLabels={never_stocked:'Never Stocked',out_of_stock:'Out of Stock',previously_stocked:'Previously Stocked',discontinued:'Discontinued',under_review:'Under Review',test_restock:'Test Restock'};
+
+  el.innerHTML=items.map(req=>{
+    const daysAgoReq=req.lastRequestDate?Math.max(0,Math.ceil((Date.now()-new Date(req.lastRequestDate))/(864e5))):0;
+    const trending=req.count>=5;const growing=req.count>=3;
+    const trend=trending?'up':growing?'up':'flat';
+    const trendLabel=trending?`🔥 ${req.count}× requested`:growing?`↑ ${req.count}× requested`:'';
+    return `<div class="req-item">
+      <div class="req-count">${req.count||1}</div>
+      <div class="req-body">
+        <div class="req-name">${req.name}</div>
+        <div class="req-meta">${statusLabels[req.status]||req.status}${req.notes?' · '+req.notes:''} · Last: ${daysAgoReq===0?'today':daysAgoReq+'d ago'}</div>
+        ${trendLabel?`<div class="req-trend ${trend}">${trendLabel}</div>`:''}
+        <div class="req-actions">
+          <button class="req-btn req-btn-stock" onclick="convertRequestToInventory('${req.id}')">→ Add to Inventory</button>
+          <button class="req-btn req-btn-review" onclick="markRequestTestRestock('${req.id}')">Test Restock</button>
+          <button class="req-btn req-btn-dismiss" onclick="dismissRequest('${req.id}')">Dismiss</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function markRequestTestRestock(id){
+  requestsCache=await dbGetAll('customer_requests');
+  const req=requestsCache.find(r=>r.id===id);if(!req)return;
+  await dbPut('customer_requests',{...req,status:'test_restock',updatedAt:Date.now()});
+  showToast('Marked as Test Restock candidate');renderRequestsList();
+}
+
+async function dismissRequest(id){
+  requestsCache=await dbGetAll('customer_requests');
+  const req=requestsCache.find(r=>r.id===id);if(!req)return;
+  await dbPut('customer_requests',{...req,status:'dismissed',updatedAt:Date.now()});
+  showToast('Request dismissed');renderRequestsList();updateRequestBadge();
+}
+
+async function convertRequestToInventory(id){
+  requestsCache=await dbGetAll('customer_requests');
+  const req=requestsCache.find(r=>r.id===id);if(!req)return;
+  // Pre-fill inventory form
+  document.getElementById('inv-name').value=req.name;
+  document.getElementById('inv-notes').value=`Converted from customer request (${req.count}× requested)`;
+  document.getElementById('inv-intake').value=todayISO();
+  document.getElementById('inv-lastmove').value=todayISO();
+  document.getElementById('inv-edit-id').value='';
+  document.getElementById('inv-modal-title').textContent='ADD ITEM (from request)';
+  closeModal('modal-request-detail');
+  document.getElementById('modal-inventory').classList.add('open');
+  // Mark request as stocked
+  await dbPut('customer_requests',{...req,status:'stocked',updatedAt:Date.now()});
+}
+
+function setReqFilter(f,el){
+  reqFilter=f;
+  document.querySelectorAll('.sort-chip[data-rf]').forEach(c=>c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderRequestsList();
+}
+
+async function updateRequestBadge(){
+  requestsCache=await dbGetAll('customer_requests');
+  const count=requestsCache.filter(r=>r.count>=3&&r.status!=='dismissed'&&r.status!=='stocked').length;
+  const badge=document.getElementById('nav-req-badge');
+  if(badge){badge.textContent=count||'';badge.style.display=count?'block':'none';}
+}
+
+// ============================================================
+// PURCHASING SCREEN RENDER
+// ============================================================
+async function refreshPurchasing(){
+  inventoryCache=await dbGetAll('inventory');
+  importsCache=await dbGetAll('sales_imports');
+
+  const intel=computeOrderIntel(inventoryCache,importsCache);
+  const confLabel={high:'HIGH',mod:'MOD',low:'LOW'};
+  const confCls={high:'conf-high',mod:'conf-mod',low:'conf-low'};
+
+  // ORDER LIST
+  const orderEl=document.getElementById('order-list');
+  if(!intel.order.length){
+    orderEl.innerHTML='<div class="aq-item"><div class="aq-icon">✅</div><div class="aq-body"><div class="aq-title">No urgent reorder candidates</div><div class="aq-sub">All stocked levels appear adequate</div></div></div>';
+  } else {
+    orderEl.innerHTML=intel.order.map(({item,confidence,reasons,daysLeft})=>`
+      <div class="purchase-row" onclick="openItemDetail('${item.id}')">
+        <div class="purchase-icon">📦</div>
+        <div class="purchase-body">
+          <div class="purchase-name">${item.name}${item.strength?` <span style="color:var(--text3);font-size:11px">${item.strength}</span>`:''}</div>
+          <div class="purchase-reason">${reasons.join(' · ')}</div>
+          ${daysLeft!==null?`<div style="font-size:10px;color:var(--text3);margin-top:2px">~${daysLeft}d stock remaining · Qty: ${fmtNum(item.qty)}</div>`:''}
+        </div>
+        <div class="purchase-right"><span class="confidence-badge ${confCls[confidence]}">${confLabel[confidence]}</span></div>
+      </div>`).join('');
+  }
+
+  // DON'T ORDER
+  const dontEl=document.getElementById('dont-order-list');
+  if(!intel.dontOrder.length){
+    dontEl.innerHTML='<div class="aq-item"><div class="aq-icon">🛡️</div><div class="aq-body"><div class="aq-title">No capital risk items detected</div></div></div>';
+  } else {
+    dontEl.innerHTML=intel.dontOrder.map(({item,reason,priority})=>`
+      <div class="purchase-row">
+        <div class="purchase-icon">${priority==='high'?'🚫':'⚠️'}</div>
+        <div class="purchase-body">
+          <div class="purchase-name">${item.name}</div>
+          <div class="purchase-reason">${reason}</div>
+        </div>
+        <div class="purchase-right"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">${fmt((item.costPrice||0)*(item.qty||0))}</span></div>
+      </div>`).join('');
+  }
+
+  // MICRO RESTOCK
+  const microCard=document.getElementById('micro-restock-card');
+  const microEl=document.getElementById('micro-restock-list');
+  if(intel.microRestock.length){
+    microCard.style.display='block';
+    microEl.innerHTML=intel.microRestock.map(({item,m1sold,reason})=>`
+      <div class="purchase-row" onclick="openItemDetail('${item.id}')">
+        <div class="purchase-icon">🧪</div>
+        <div class="purchase-body">
+          <div class="purchase-name">${item.name}</div>
+          <div class="purchase-reason">${reason} — test with 3–5 units</div>
+        </div>
+        <div class="purchase-right"><span class="confidence-badge conf-low">TEST</span></div>
+      </div>`).join('');
+  } else microCard.style.display='none';
+
+  // PURCHASING LOOP
+  const loop=computePurchasingLoop(inventoryCache);
+  document.getElementById('purchasing-loop').innerHTML=`
+    <div style="font-size:13px;color:${loop.statusColor};font-weight:500;margin-bottom:10px">${loop.status}</div>
+    <div class="stat-row"><span class="stat-label">Healthy Movement</span><span class="stat-value green">${loop.healthPct}%</span></div>
+    <div class="stat-row" style="margin-bottom:4px"><span class="stat-label">Trapped/Dead</span><span class="stat-value ${loop.trapPct>=30?'red':'muted'}">${loop.trapPct}%</span></div>
+    <div class="progress-wrap"><div class="progress-bar green" style="width:${loop.healthPct}%"></div></div>
+  `;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+const fmt=n=>'₦'+Number(n||0).toLocaleString('en-NG',{minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtNum=n=>Number(n||0).toLocaleString();
+const daysUntilExpiry=exp=>exp?Math.ceil((new Date(exp)-Date.now())/(864e5)):null;
+const todayISO=()=>new Date().toISOString().split('T')[0];
+const closeModal=id=>document.getElementById(id).classList.remove('open');
+const normName=s=>s.toLowerCase().trim().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ');
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function movPillHtml(s){const m={fast:'pill-fast Fast',stable:'pill-stable Stable',slow:'pill-slow Slow',stagnant:'pill-stagnant Stagnant',dead:'pill-dead Dead'};const c=m[s]||'pill-dead Dead';const[cls,lbl]=c.split(' ');return `<span class="pill ${cls}">${lbl}</span>`;}
+function ownPillHtml(o){const m={own:'pill-own Own',consignment:'pill-consignment Consignment',mixed:'pill-mixed Mixed'};const c=m[o]||'pill-own Own';const[cls,lbl]=c.split(' ');return `<span class="pill ${cls}">${lbl}</span>`;}
+function expiryClass(d){return d===null?'':(d<0||d<=90)?'expiry-urgent':d<=180?'expiry-warn':'expiry-ok';}
+function trendArrow(now,prev){if(prev===0) return {arrow:'→',cls:'flat'};const pct=((now-prev)/prev)*100;if(pct>5) return {arrow:`↑ ${Math.round(pct)}%`,cls:'up'};if(pct<-5) return {arrow:`↓ ${Math.round(Math.abs(pct))}%`,cls:'down'};return {arrow:'→ flat',cls:'flat'};}
+
+// ============================================================
+// NAVIGATE
+// ============================================================
+function navigate(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  document.getElementById('nav-'+screen).classList.add('active');
+  saveSession('lastScreen',screen);
+  const h={cockpit:refreshCockpit,inventory:renderInventoryList,purchasing:refreshPurchasing,requests:renderRequestsList,consignment:refreshConsignment,weekly:refreshWeekly,import:()=>renderReviewList()};
+  if(h[screen]) h[screen]();
+}
+
+// ============================================================
+// COCKPIT
+// ============================================================
+async function refreshCockpit(){
+  inventoryCache=await dbGetAll('inventory');
+  repaymentsCache=await dbGetAll('repayment_logs');
+  requestsCache=await dbGetAll('customer_requests');
+  importsCache=await dbGetAll('sales_imports');
+
+  // Auto-classify movement
+  for(const item of inventoryCache){
+    const nm=computeMovementScore(item);
+    if(nm!==item.movement){item.movement=nm;await dbPut('inventory',item);}
+  }
+
+  await takeDailySnapshot(inventoryCache,repaymentsCache);
+
+  let totalValue=0,recoverable=0,trapped=0,nearExpiry=0;
+  const mv={fast:0,stable:0,slow:0,stagnant:0,dead:0};
+  let conTotal=0,conUnsold=0;
+
+  inventoryCache.forEach(item=>{
+    const val=(item.costPrice||0)*(item.qty||0);
+    const sellVal=(item.sellPrice||0)*(item.qty||0);
+    totalValue+=val;
+    const m=item.movement||'stable';
+    mv[m]=(mv[m]||0)+1;
+    if(m==='fast'||m==='stable') recoverable+=sellVal;
+    else if(m==='slow') recoverable+=sellVal*0.7;
+    if(m==='stagnant'||m==='dead') trapped+=val;
+    const d=daysUntilExpiry(item.expiryDate);
+    if(d!==null&&d<=90&&d>=0) nearExpiry++;
+    if(item.ownership==='consignment'||item.ownership==='mixed'){
+      conTotal+=(item.originalQty||item.qty||0)*(item.costPrice||0);
+      conUnsold+=(item.qty||0)*(item.costPrice||0);
+    }
+  });
+  const totalPaid=repaymentsCache.reduce((s,r)=>s+(r.amount||0),0);
+  const conConverted=Math.max(0,conTotal-conUnsold);
+  const conBalance=Math.max(0,conTotal-totalPaid);
+  const n=inventoryCache.length;
+
+  // Hero
+  if(n===0){
+    document.getElementById('hero-recoverable').textContent='₦—';
+    document.getElementById('hero-recoverable').style.color='var(--text3)';
+    document.getElementById('hero-sub').textContent='Tap + Item to begin tracking inventory';
+    document.getElementById('hero-progress-row').style.display='none';
+  } else {
+    document.getElementById('hero-recoverable').textContent=fmt(recoverable);
+    document.getElementById('hero-recoverable').style.color='var(--green)';
+    const pct=totalValue>0?Math.min(100,Math.round(recoverable/totalValue*100)):0;
+    document.getElementById('hero-sub').textContent=`${n} SKU${n!==1?'s':''} · ${fmt(trapped)} trapped`;
+    document.getElementById('hero-progress-row').style.display='flex';
+    document.getElementById('hero-progress-fill').style.width=pct+'%';
+    document.getElementById('hero-progress-label').textContent=pct+'%';
+  }
+
+  // Morning Briefing
+  const briefing=buildMorningBriefing(inventoryCache,repaymentsCache,requestsCache);
+  const briefingCard=document.getElementById('briefing-card');
+  const briefingList=document.getElementById('briefing-list');
+  if(briefing.length>0&&n>0){
+    briefingCard.style.display='block';
+    document.getElementById('briefing-date').textContent=new Date().toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short'});
+    briefingList.innerHTML=briefing.map(b=>`<div class="briefing-item"><div class="briefing-dot" style="background:${b.dot}"></div><div class="briefing-text">${b.text}</div><div class="briefing-val" style="color:${b.dot}">${b.val}</div></div>`).join('');
+  } else briefingCard.style.display='none';
+
+  // Action Queue
+  const pending=await buildActionQueue(inventoryCache,repaymentsCache);
+  renderActionQueue(pending);
+  const aqCount=pending.length;
+  document.getElementById('aq-count-badge').textContent=aqCount;
+  document.getElementById('aq-count-badge').style.display=aqCount?'inline':'none';
+  document.getElementById('nav-aq-badge').textContent=aqCount;
+  document.getElementById('nav-aq-badge').style.display=aqCount?'block':'none';
+
+  // Push candidates (enhanced scoring)
+  const pushItems=inventoryCache.filter(i=>(i.qty||0)>0).map(i=>({item:i,ps:computePushScore(i,repaymentsCache)})).filter(x=>x.ps.score>=40).sort((a,b)=>b.ps.score-a.ps.score).slice(0,5);
+  const pushCard=document.getElementById('push-candidates-card');
+  if(pushItems.length>0&&n>0){
+    pushCard.style.display='block';
+    document.getElementById('push-candidates-list').innerHTML=pushItems.map(({item},idx)=>{
+      const m=item.sellPrice&&item.costPrice?Math.round(((item.sellPrice-item.costPrice)/item.sellPrice)*100):0;
+      const d=daysUntilExpiry(item.expiryDate);
+      const reasons=[];
+      if(m>=25) reasons.push(`${m}% margin`);
+      if(d!==null&&d<=90) reasons.push(`${d}d expiry`);
+      if(item.movement==='stagnant'||item.movement==='slow') reasons.push('slow');
+      if(item.ownership==='consignment') reasons.push('consignment');
+      return `<div class="push-item" onclick="openItemDetail('${item.id}')">
+        <div class="push-rank">${idx+1}</div>
+        <div class="push-body"><div class="push-name">${item.name}</div><div class="push-reason">${reasons.join(' · ')||'Push candidate'} · Qty ${fmtNum(item.qty)}</div></div>
+        <div class="push-value"><div class="push-value-num">${fmt((item.sellPrice||0)*(item.qty||0))}</div><div class="push-value-label">potential</div></div>
+      </div>`;
+    }).join('');
+  } else pushCard.style.display='none';
+
+  // Tiles
+  document.getElementById('wg-items').textContent=n;
+  document.getElementById('wg-expiring').textContent=nearExpiry;
+  document.getElementById('wg-fast').textContent=mv.fast;
+  document.getElementById('wg-stagnant').textContent=mv.stagnant+mv.dead;
+
+  // Demand Reawakening
+  const reawaken=await detectReawakening(inventoryCache);
+  const reawakenCard=document.getElementById('reawaken-card');
+  if(reawaken.length>0){
+    reawakenCard.style.display='block';
+    document.getElementById('reawaken-list').innerHTML=reawaken.map(s=>`
+      <div class="stat-row" style="margin-bottom:8px;align-items:flex-start">
+        <span class="stat-label" style="font-size:12px;flex:1">${s.item.name}</span>
+        <span class="momentum-reawaken" style="flex-shrink:0">✦ ${s.sub}</span>
+      </div>`).join('');
+  } else reawakenCard.style.display='none';
+
+  // Momentum
+  const momentum=await detectMomentum(inventoryCache);
+  const momCard=document.getElementById('momentum-card');
+  if(momentum.length>0){
+    momCard.style.display='block';
+    document.getElementById('momentum-list').innerHTML=momentum.map(m=>{
+      const badge=m.type==='accelerating'?'momentum-up':m.type==='slowing'?'momentum-down':'momentum-new';
+      const icon=m.type==='accelerating'?'↑':m.type==='slowing'?'↓':'✦';
+      return `<div class="stat-row" style="margin-bottom:8px"><span class="stat-label" style="font-size:12px">${m.item.name}</span><span class="${badge}">${icon} ${m.sub}</span></div>`;
+    }).join('');
+  } else momCard.style.display='none';
+
+  // Consignment
+  if(conTotal===0){document.getElementById('home-con-empty').style.display='block';document.getElementById('home-con-data').style.display='none';}
+  else{
+    document.getElementById('home-con-empty').style.display='none';document.getElementById('home-con-data').style.display='block';
+    document.getElementById('home-con-converted').textContent=fmt(conConverted);
+    document.getElementById('home-con-outstanding').textContent=fmt(conBalance);
+    const pct=conTotal>0?Math.min(100,Math.round(totalPaid/conTotal*100)):0;
+    document.getElementById('home-con-progress').style.width=pct+'%';
+    document.getElementById('home-con-label').textContent=totalPaid>0?`${pct}% repaid — ${fmt(totalPaid)} of ${fmt(conTotal)}`:'Log repayments to track progress';
+  }
+
+  // Snapshot trends
+  const trends=await getSnapshotTrends();
+  const trendsCard=document.getElementById('snapshot-trends-card');
+  if(trends){
+    trendsCard.style.display='block';
+    const rows=[
+      {label:'Recoverable Value',now:trends.recoverable.now,prev:trends.recoverable.prev,invert:false},
+      {label:'Trapped Capital',now:trends.trapped.now,prev:trends.trapped.prev,invert:true},
+      {label:'Expiry Exposure (<90d)',now:trends.exp90.now,prev:trends.exp90.prev,invert:true},
+    ];
+    document.getElementById('snapshot-trends-list').innerHTML=rows.map(r=>{
+      const t=trendArrow(r.now,r.prev);
+      const good=r.invert?(t.cls==='down'):(t.cls==='up');
+      return `<div class="trend-row"><span class="trend-label">${r.label}</span><span class="trend-val" style="color:var(--text2)">${fmt(r.now)}</span><span style="color:${good?'var(--green)':'var(--orange)'};font-size:11px;font-weight:600">${t.arrow}</span></div>`;
+    }).join('');
+  } else trendsCard.style.display='none';
+
+  // Update request badge
+  updateRequestBadge();
+}
+
+// ============================================================
+// RENDER ACTION QUEUE
+// ============================================================
+function renderActionQueue(pending){
+  const el=document.getElementById('action-queue-list');
+  if(!pending.length){el.innerHTML='<div class="aq-item"><div class="aq-icon">✅</div><div class="aq-body"><div class="aq-title">No pending actions</div><div class="aq-sub">Priorities appear automatically as data grows</div></div></div>';return;}
+  el.innerHTML=pending.map(a=>`
+    <div class="aq-item">
+      <div class="aq-priority ${a.priority}"></div>
+      <div class="aq-icon">${a.icon}</div>
+      <div class="aq-body">
+        <div class="aq-title">${a.title}</div>
+        <div class="aq-sub">${a.sub}</div>
+        ${a.chain?`<div class="aq-chain">${a.chain}</div>`:''}
+        <div class="aq-actions">
+          <button class="aq-btn aq-btn-do" onclick="executeAction('${a.action}','${a.targetId||''}')">Act Now</button>
+          <button class="aq-btn aq-btn-done" onclick="resolveAction('${a.id}','done')">✓ Done</button>
+          <button class="aq-btn aq-btn-snooze" onclick="resolveAction('${a.id}','snoozed_today')">Later</button>
+        </div>
+      </div>
+      <div class="aq-badge ${a.badgeCls}">${a.badge}</div>
+    </div>`).join('');
+}
+
+async function refreshActionQueue(){
+  inventoryCache=await dbGetAll('inventory');
+  repaymentsCache=await dbGetAll('repayment_logs');
+  const all=await dbGetAll('action_queue');
+  for(const a of all.filter(a=>a.status==='pending')) await dbDelete('action_queue',a.id);
+  const pending=await buildActionQueue(inventoryCache,repaymentsCache);
+  renderActionQueue(pending);
+  showToast('Action queue refreshed');
+}
+
+// ============================================================
+// INVENTORY LIST
+// ============================================================
+async function renderInventoryList(){
+  inventoryCache=await dbGetAll('inventory');
+  const q=(document.getElementById('inv-search')?.value||'').toLowerCase();
+  let items=[...inventoryCache];
+  if(q) items=items.filter(i=>(i.name+' '+(i.brand||'')+' '+(i.strength||'')).toLowerCase().includes(q));
+
+  const reorderIds=new Set(computeReorderIntel(inventoryCache).map(r=>r.item.id));
+  const pushIds=new Set(inventoryCache.filter(i=>(i.qty||0)>0).filter(i=>computePushScore(i,repaymentsCache).score>=40).map(i=>i.id));
+
+  if(invFilter==='consignment') items=items.filter(i=>i.ownership==='consignment'||i.ownership==='mixed');
+  else if(invFilter==='review') items=items.filter(i=>i.needsReview);
+  else if(invFilter==='push') items=items.filter(i=>pushIds.has(i.id));
+  else if(invFilter==='reorder') items=items.filter(i=>reorderIds.has(i.id));
+  else if(invFilter==='expiry'){const now=Date.now();items=items.filter(i=>{const d=i.expiryDate?Math.ceil((new Date(i.expiryDate)-now)/(864e5)):null;return d!==null&&d<=180;});items.sort((a,b)=>new Date(a.expiryDate)-new Date(b.expiryDate));}
+  else if(invFilter!=='all') items=items.filter(i=>i.movement===invFilter);
+
+  items.sort((a,b)=>{
+    const sa=computePushScore(a,repaymentsCache).score+((daysUntilExpiry(a.expiryDate)||999)<=90?50:0);
+    const sb=computePushScore(b,repaymentsCache).score+((daysUntilExpiry(b.expiryDate)||999)<=90?50:0);
+    return sb-sa;
+  });
+
+  const el=document.getElementById('inventory-list');
+  if(!items.length){
+    const msgs={all:'No inventory items yet.\nTap + Item to add your first product.',push:'No high-priority push candidates.',reorder:'No items running low.',review:'No items need review.',expiry:'No expiry risks in this range ✓'};
+    el.innerHTML=`<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">${(msgs[invFilter]||'No '+invFilter+' items.').replace('\n','<br>')}</div></div>`;
+    return;
+  }
+
+  el.innerHTML=items.map(item=>{
+    const days=daysUntilExpiry(item.expiryDate);
+    const lm=lastMoveLabel(item);
+    const isReorder=reorderIds.has(item.id);
+    const isPush=pushIds.has(item.id);
+    const isDontOrder=item.movement==='stagnant'||item.movement==='dead';
+    const cardCls=days!==null&&days<=60&&days>=0?'inv-urgent':isPush&&!isDontOrder?'inv-push':isReorder?'inv-reorder':isDontOrder?'inv-dontorder':'';
+    const margin=item.sellPrice&&item.costPrice&&item.sellPrice>0?Math.round(((item.sellPrice-item.costPrice)/item.sellPrice)*100):null;
+    const expBadge=days===null?'':days<0?`<span style="color:var(--red);font-size:11px;font-weight:600">EXPIRED</span>`:days<=60?`<span style="color:var(--red);font-size:11px">exp ${days}d</span>`:days<=180?`<span style="color:var(--orange);font-size:11px">exp ${days}d</span>`:`<span style="color:var(--text3);font-size:11px">exp ${days}d</span>`;
+
+    return `<div class="inv-card ${cardCls}">
+      <div class="inv-card-body" onclick="openItemDetail('${item.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px">
+          <div style="flex:1;min-width:0;padding-right:10px">
+            <div style="font-weight:600;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.name}${item.strength?` <span style="color:var(--text3);font-weight:400;font-size:12px">${item.strength}</span>`:''}</div>
+            ${item.brand?`<div style="font-size:11px;color:var(--text3)">${item.brand}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--amber);font-weight:500">${fmt(item.sellPrice)}</div>
+            <div style="font-size:11px;color:var(--text3)">Qty ${fmtNum(item.qty)}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          ${movPillHtml(item.movement||'stable')}
+          ${ownPillHtml(item.ownership||'own')}
+          ${isReorder?'<span class="pill pill-reorder">Low</span>':''}
+          ${isPush&&!isDontOrder?'<span class="pill pill-push">Push</span>':''}
+          ${item.needsReview?'<span class="pill pill-review">Review</span>':''}
+          ${expBadge}
+          ${margin!==null?`<span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:${margin>=25?'var(--green)':margin>=10?'var(--text3)':'var(--red)'}">${margin}%</span>`:''}
+        </div>
+        ${lm?`<div style="margin-top:5px"><span class="last-move ${lm.cls}">${lm.label}</span></div>`:''}
+      </div>
+      <div class="inv-card-actions">
+        <button class="qa-btn" onclick="quickSaleReduce('${item.id}')">−Sale</button>
+        <button class="qa-btn" onclick="quickRestock('${item.id}')">+Stock</button>
+        <button class="qa-btn" onclick="openQuickActions('${item.id}')">Actions</button>
+        <button class="qa-btn" onclick="openEditInventory('${item.id}')">Edit</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setInvFilter(f,el){
+  invFilter=f;saveSession('invFilter',f);
+  document.querySelectorAll('.sort-chip[data-filter]').forEach(c=>{c.classList.remove('active');if(c.dataset.filter===f) c.classList.add('active');});
+  renderInventoryList();
+}
+
+// ============================================================
+// ITEM DETAIL MODAL
+// ============================================================
+async function openItemDetail(id){
+  inventoryCache=await dbGetAll('inventory');
+  const item=inventoryCache.find(i=>i.id===id);if(!item)return;
+  repaymentsCache=await dbGetAll('repayment_logs');
+  const days=daysUntilExpiry(item.expiryDate);
+  const lm=lastMoveLabel(item);
+  const margin=item.sellPrice&&item.costPrice&&item.sellPrice>0?Math.round(((item.sellPrice-item.costPrice)/item.sellPrice)*100):null;
+  const mColor=margin===null?'':(margin>=25?'var(--green)':margin>=10?'var(--amber)':'var(--red)');
+  const mBg=margin===null?'':(margin>=25?'var(--green-faint)':margin>=10?'var(--amber-faint)':'var(--red-faint)');
+  const ps=computePushScore(item,repaymentsCache);
+  const reorderInfo=computeReorderIntel(inventoryCache);
+  const reorder=reorderInfo.find(r=>r.item.id===id);
+
+  document.getElementById('item-detail-content').innerHTML=`
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px">
+      <div><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--amber);letter-spacing:1px">${item.name}</div>${item.brand?`<div style="font-size:12px;color:var(--text3)">${item.brand}${item.strength?' · '+item.strength:''}</div>`:''}</div>
+      ${margin!==null?`<span style="background:${mBg};color:${mColor};font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;font-family:'DM Mono',monospace;flex-shrink:0">${margin}% margin</span>`:''}
+    </div>
+    ${reorder?`<div style="background:var(--blue-faint);border:1px solid var(--blue-dim);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--blue)">🔄 ~${reorder.daysLeft}d stock remaining at current velocity</div>`:''}
+    ${ps.score>=50?`<div style="background:var(--green-faint);border:1px solid var(--green-dim);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--green)">🚀 Push candidate — score ${ps.score}/100</div>`:''}
+    <div class="card" style="margin-bottom:12px">
+      <div class="stat-row"><span class="stat-label">Quantity</span><span class="stat-value amber">${fmtNum(item.qty)}</span></div>
+      <div class="stat-row"><span class="stat-label">Cost / Sell</span><span class="stat-value">${fmt(item.costPrice)} / ${fmt(item.sellPrice)}</span></div>
+      <div class="stat-row"><span class="stat-label">Stock Value</span><span class="stat-value amber">${fmt((item.costPrice||0)*(item.qty||0))}</span></div>
+      <div class="stat-row"><span class="stat-label">Potential Profit</span><span class="stat-value green">${fmt(((item.sellPrice||0)-(item.costPrice||0))*(item.qty||0))}</span></div>
+      <div class="stat-row"><span class="stat-label">Movement</span><span class="stat-value">${movPillHtml(item.movement)}</span></div>
+      <div class="stat-row"><span class="stat-label">Ownership</span><span class="stat-value">${ownPillHtml(item.ownership)}</span></div>
+      <div class="stat-row"><span class="stat-label">Expiry</span><span class="stat-value ${expiryClass(days)}">${days===null?'Not set':days<0?'EXPIRED':days+'d remaining'}</span></div>
+      <div class="stat-row" style="margin-bottom:0"><span class="stat-label">Last Movement</span><span class="stat-value ${lm?.cls||''}">${lm?lm.label:'Not recorded'}</span></div>
+    </div>
+    ${item.notes?`<div style="font-size:12px;color:var(--text3);margin-bottom:12px;padding:10px 12px;background:var(--bg3);border-radius:8px">${item.notes}</div>`:''}
+    <button class="btn btn-primary btn-block" style="margin-bottom:8px" onclick="openQuickActions('${item.id}');closeModal('modal-item-detail')">⚡ Quick Actions</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" style="flex:1" onclick="openEditInventory('${item.id}');closeModal('modal-item-detail')">Edit</button>
+      <button class="btn btn-danger" style="flex:1" onclick="deleteItem('${item.id}')">Delete</button>
+    </div>
+  `;
+  document.getElementById('modal-item-detail').classList.add('open');
+}
+
+async function deleteItem(id){if(!confirm('Delete this item?'))return;await dbDelete('inventory',id);closeModal('modal-item-detail');renderInventoryList();showToast('Item deleted');}
+
+// ============================================================
+// QUICK ACTIONS
+// ============================================================
+async function openQuickActions(id){
+  inventoryCache=await dbGetAll('inventory');
+  repaymentsCache=await dbGetAll('repayment_logs');
+  const item=inventoryCache.find(i=>i.id===id);if(!item){showToast('Not found');return;}
+  quickAdjustItem=item;
+  const isCon=item.ownership==='consignment'||item.ownership==='mixed';
+  document.getElementById('qa-title').textContent=(item.name.length>22?item.name.slice(0,22)+'…':item.name).toUpperCase();
+  document.getElementById('qa-body').innerHTML=`
+    <div class="qa-grid">
+      <div class="qa-action" onclick="qaReduceQty()"><div class="qa-action-icon">📉</div><div class="qa-action-label">Record Sale</div></div>
+      <div class="qa-action" onclick="qaAddStock()"><div class="qa-action-icon">📦</div><div class="qa-action-label">Restock</div></div>
+      <div class="qa-action" onclick="qaMarkFast()"><div class="qa-action-icon">🚀</div><div class="qa-action-label">Mark Fast</div></div>
+      <div class="qa-action" onclick="qaMarkSlow()"><div class="qa-action-icon">🐢</div><div class="qa-action-label">Mark Slow</div></div>
+      <div class="qa-action" onclick="qaMarkStagnant()"><div class="qa-action-icon">🧊</div><div class="qa-action-label">Mark Stagnant</div></div>
+      <div class="qa-action" onclick="qaMarkDead()"><div class="qa-action-icon">🪦</div><div class="qa-action-label">Mark Dead</div></div>
+      <div class="qa-action" onclick="qaUpdateExpiry()"><div class="qa-action-icon">📅</div><div class="qa-action-label">Update Expiry</div></div>
+      ${isCon?`<div class="qa-action" onclick="qaRepayment()"><div class="qa-action-icon">💳</div><div class="qa-action-label">Log Repayment</div></div>`:`<div class="qa-action" onclick="closeModal('modal-quickadjust');openEditInventory('${item.id}')"><div class="qa-action-icon">✏️</div><div class="qa-action-label">Edit Details</div></div>`}
+    </div>
+    <div style="font-size:12px;color:var(--text3);text-align:center;margin-bottom:12px">Qty: <strong style="color:var(--text)">${fmtNum(item.qty)}</strong> · ${movPillHtml(item.movement||'stable')}</div>
+    <div id="qa-inline-form"></div>
+    <button class="btn btn-ghost btn-block" onclick="closeModal('modal-quickadjust')" style="margin-top:4px">Done</button>
+  `;
+  document.getElementById('modal-quickadjust').classList.add('open');
+}
+
+const showQAForm=html=>{const el=document.getElementById('qa-inline-form');if(el) el.innerHTML=html;};
+
+function qaReduceQty(){showQAForm(`<div class="card" style="margin-bottom:12px;background:var(--bg3)"><div class="form-label" style="margin-bottom:8px">Qty Sold</div><div style="display:flex;gap:8px"><input class="form-input" id="qa-val" type="number" placeholder="e.g. 10" min="1" style="flex:1"/><button class="btn btn-primary" onclick="execQAReduce()">Confirm</button></div></div>`);setTimeout(()=>document.getElementById('qa-val')?.focus(),80);}
+async function execQAReduce(){
+  const qty=parseInt(document.getElementById('qa-val')?.value||0);
+  if(!qty||qty<=0){showToast('Enter qty sold');return;}
+  const newQty=Math.max(0,(quickAdjustItem.qty||0)-qty);
+  const updated={...quickAdjustItem,qty:newQty,lastMovementDate:todayISO(),updatedAt:Date.now()};
+  updated.movement=computeMovementScore(updated);
+  await dbPut('inventory',updated);quickAdjustItem=updated;
+  showQAForm(`<div style="color:var(--green);font-size:13px;text-align:center;padding:10px">✓ ${qty} sold — qty now ${newQty}</div>`);
+  showToast('Sale recorded');renderInventoryList();refreshCockpit();
+}
+
+function qaAddStock(){showQAForm(`<div class="card" style="margin-bottom:12px;background:var(--bg3)"><div class="form-label" style="margin-bottom:8px">Qty to Add</div><div style="display:flex;gap:8px"><input class="form-input" id="qa-val" type="number" placeholder="e.g. 50" min="1" style="flex:1"/><button class="btn btn-primary" onclick="execQAAdd()">Confirm</button></div></div>`);setTimeout(()=>document.getElementById('qa-val')?.focus(),80);}
+async function execQAAdd(){
+  const qty=parseInt(document.getElementById('qa-val')?.value||0);
+  if(!qty||qty<=0){showToast('Enter qty');return;}
+  const newQty=(quickAdjustItem.qty||0)+qty;
+  const updated={...quickAdjustItem,qty:newQty,originalQty:Math.max(quickAdjustItem.originalQty||0,newQty),updatedAt:Date.now()};
+  await dbPut('inventory',updated);quickAdjustItem=updated;
+  showQAForm(`<div style="color:var(--green);font-size:13px;text-align:center;padding:10px">✓ Restocked — qty now ${newQty}</div>`);
+  showToast('Stock added');renderInventoryList();refreshCockpit();
+}
+
+async function _qaMark(mov,color,label){
+  if(!quickAdjustItem)return;
+  const updated={...quickAdjustItem,movement:mov,updatedAt:Date.now()};
+  await dbPut('inventory',updated);quickAdjustItem=updated;
+  showQAForm(`<div style="color:${color};font-size:13px;text-align:center;padding:10px">${label}</div>`);
+  showToast(label);renderInventoryList();refreshCockpit();
+}
+const qaMarkFast=()=>_qaMark('fast','var(--green)','Fast Mover ✓');
+const qaMarkSlow=()=>_qaMark('slow','var(--orange)','Marked Slow');
+const qaMarkStagnant=()=>_qaMark('stagnant','var(--purple)','Marked Stagnant');
+const qaMarkDead=()=>_qaMark('dead','var(--text3)','Marked Dead Stock');
+
+function qaUpdateExpiry(){showQAForm(`<div class="card" style="margin-bottom:12px;background:var(--bg3)"><div class="form-label" style="margin-bottom:8px">New Expiry Date</div><div style="display:flex;gap:8px"><input class="form-input" id="qa-val" type="date" style="flex:1" value="${quickAdjustItem?.expiryDate||''}"/><button class="btn btn-primary" onclick="execQAExpiry()">Save</button></div></div>`);}
+async function execQAExpiry(){const val=document.getElementById('qa-val')?.value;if(!val)return;const updated={...quickAdjustItem,expiryDate:val,updatedAt:Date.now()};await dbPut('inventory',updated);quickAdjustItem=updated;showQAForm('<div style="color:var(--green);font-size:13px;text-align:center;padding:10px">✓ Expiry updated</div>');showToast('Expiry updated');renderInventoryList();}
+
+function qaRepayment(){showQAForm(`<div class="card" style="margin-bottom:12px;background:var(--bg3)"><div class="form-label" style="margin-bottom:8px">Repayment (₦)</div><div style="display:flex;gap:8px;margin-bottom:8px"><input class="form-input" id="qa-val" type="number" placeholder="Amount" style="flex:1"/><button class="btn btn-primary" onclick="execQARepayment()">Log</button></div><input class="form-input" id="qa-rep-note" type="text" placeholder="Note (optional)" style="font-size:13px"/></div>`);setTimeout(()=>document.getElementById('qa-val')?.focus(),80);}
+async function execQARepayment(){const amount=parseFloat(document.getElementById('qa-val')?.value||0);if(!amount||amount<=0){showToast('Enter amount');return;}await dbPut('repayment_logs',{id:uid(),amount,date:todayISO(),note:document.getElementById('qa-rep-note')?.value||('From '+quickAdjustItem?.name),createdAt:Date.now()});showQAForm(`<div style="color:var(--green);font-size:13px;text-align:center;padding:10px">✓ ${fmt(amount)} logged</div>`);showToast('Repayment logged');refreshCockpit();}
+
+async function quickSaleReduce(id){await openQuickActions(id);setTimeout(()=>qaReduceQty(),120);}
+async function quickRestock(id){await openQuickActions(id);setTimeout(()=>qaAddStock(),120);}
+
+// ============================================================
+// ADD / EDIT INVENTORY
+// ============================================================
+function openAddInventory(){
+  document.getElementById('inv-modal-title').textContent='ADD ITEM';
+  document.getElementById('inv-edit-id').value='';
+  ['inv-name','inv-brand','inv-strength','inv-batch','inv-notes'].forEach(id=>document.getElementById(id).value='');
+  ['inv-qty','inv-cost','inv-sell'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('inv-ownership').value='own';document.getElementById('inv-movement').value='stable';
+  document.getElementById('inv-intake').value=todayISO();document.getElementById('inv-lastmove').value=todayISO();
+  document.getElementById('inv-expiry').value='';
+  document.getElementById('modal-inventory').classList.add('open');
+}
+
+async function openEditInventory(id){
+  inventoryCache=await dbGetAll('inventory');
+  const item=inventoryCache.find(i=>i.id===id);if(!item)return;
+  document.getElementById('inv-modal-title').textContent='EDIT ITEM';
+  document.getElementById('inv-edit-id').value=item.id;
+  document.getElementById('inv-name').value=item.name||'';document.getElementById('inv-brand').value=item.brand||'';
+  document.getElementById('inv-strength').value=item.strength||'';document.getElementById('inv-batch').value=item.batch||'';
+  document.getElementById('inv-qty').value=item.qty||'';document.getElementById('inv-expiry').value=item.expiryDate||'';
+  document.getElementById('inv-cost').value=item.costPrice||'';document.getElementById('inv-sell').value=item.sellPrice||'';
+  document.getElementById('inv-ownership').value=item.ownership||'own';document.getElementById('inv-movement').value=item.movement||'stable';
+  document.getElementById('inv-intake').value=item.intakeDate||todayISO();document.getElementById('inv-lastmove').value=item.lastMovementDate||todayISO();
+  document.getElementById('inv-notes').value=item.notes||'';
+  document.getElementById('modal-inventory').classList.add('open');
+}
+
+async function saveInventoryItem(){
+  const name=document.getElementById('inv-name').value.trim();
+  if(!name){showToast('Product name required');return;}
+  const qty=parseFloat(document.getElementById('inv-qty').value||0);
+  const costPrice=parseFloat(document.getElementById('inv-cost').value||0);
+  const sellPrice=parseFloat(document.getElementById('inv-sell').value||0);
+  const editId=document.getElementById('inv-edit-id').value;
+  const item={id:editId||uid(),name,brand:document.getElementById('inv-brand').value.trim(),strength:document.getElementById('inv-strength').value.trim(),batch:document.getElementById('inv-batch').value.trim(),qty,costPrice,sellPrice,ownership:document.getElementById('inv-ownership').value,movement:document.getElementById('inv-movement').value,intakeDate:document.getElementById('inv-intake').value||todayISO(),lastMovementDate:document.getElementById('inv-lastmove').value||todayISO(),expiryDate:document.getElementById('inv-expiry').value||null,notes:document.getElementById('inv-notes').value.trim(),updatedAt:Date.now()};
+  if(editId){const ex=(await dbGetAll('inventory')).find(i=>i.id===editId);item.originalQty=ex?.originalQty||ex?.qty||qty;item.needsReview=false;}
+  else item.originalQty=qty;
+  item.movement=computeMovementScore(item);
+  await dbPut('inventory',item);
+  closeModal('modal-inventory');renderInventoryList();refreshCockpit();
+  showToast(editId?'Item updated':'Item added');
+}
+
+// ============================================================
+// CONSIGNMENT
+// ============================================================
+async function refreshConsignment(){
+  inventoryCache=await dbGetAll('inventory');repaymentsCache=await dbGetAll('repayment_logs');
+  if(!document.getElementById('rep-date').value) document.getElementById('rep-date').value=todayISO();
+  let conTotal=0,conUnsold=0,conDead=0,conNearExp=0;
+  inventoryCache.forEach(item=>{
+    if(item.ownership==='consignment'||item.ownership==='mixed'){
+      const origQty=item.originalQty||item.qty||0;conTotal+=origQty*(item.costPrice||0);
+      const u=(item.qty||0)*(item.costPrice||0);conUnsold+=u;
+      if(item.movement==='dead') conDead+=u;
+      const d=daysUntilExpiry(item.expiryDate);if(d!==null&&d<=90&&d>=0) conNearExp+=u;
+    }
+  });
+  const paid=repaymentsCache.reduce((s,r)=>s+(r.amount||0),0);
+  const sold=Math.max(0,conTotal-conUnsold);const balance=Math.max(0,conTotal-paid);
+  const pct=conTotal>0?Math.min(100,Math.round(paid/conTotal*100)):0;
+  document.getElementById('con-empty-state').style.display=conTotal===0?'block':'none';
+  document.getElementById('con-data-section').style.display=conTotal===0?'none':'block';
+  document.getElementById('cc-sold').textContent=fmt(sold);
+  document.getElementById('cc-sold-sub').textContent=sold>0?`${pct}% of consignment recovered`:'Recovery begins when stock sells';
+  document.getElementById('cc-paid').textContent=fmt(paid);
+  document.getElementById('cc-profit').textContent=fmt(Math.max(0,sold-Math.max(0,balance-conUnsold)));
+  document.getElementById('cc-unsold').textContent=fmt(conUnsold);
+  document.getElementById('cc-balance').textContent=fmt(balance);
+  document.getElementById('cc-progress').style.width=pct+'%';
+  document.getElementById('cc-progress-label').textContent=paid>0?`${pct}% repaid — ${fmt(paid)} of ${fmt(conTotal)}`:'Log repayments to track progress';
+  document.getElementById('cc-dead').textContent=conDead>0?fmt(conDead):'None detected';
+  document.getElementById('cc-nearexpiry').textContent=conNearExp>0?fmt(conNearExp):'None detected';
+  renderRepaymentHistory();
+}
+
+async function logRepayment(){
+  const amount=parseFloat(document.getElementById('rep-amount').value||0);
+  if(!amount||amount<=0){showToast('Enter a valid amount');return;}
+  await dbPut('repayment_logs',{id:uid(),amount,date:document.getElementById('rep-date').value||todayISO(),note:document.getElementById('rep-note').value.trim(),createdAt:Date.now()});
+  document.getElementById('rep-amount').value='';document.getElementById('rep-note').value='';
+  showToast('Repayment logged');refreshConsignment();
+}
+
+async function renderRepaymentHistory(){
+  repaymentsCache=await dbGetAll('repayment_logs');
+  const sorted=[...repaymentsCache].sort((a,b)=>b.createdAt-a.createdAt);
+  const el=document.getElementById('repayment-history');
+  el.innerHTML=!sorted.length?'<div class="ledger-row"><span style="font-size:12px;color:var(--text3)">No repayments logged yet</span></div>':sorted.map(r=>`<div class="ledger-row"><div><div style="font-size:13px;font-weight:500;color:var(--text)">${fmt(r.amount)}</div><div style="font-size:11px;color:var(--text3)">${r.date}${r.note?' · '+r.note:''}</div></div><button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px" onclick="deleteRepayment('${r.id}')">Del</button></div>`).join('');
+}
+
+async function deleteRepayment(id){await dbDelete('repayment_logs',id);showToast('Removed');refreshConsignment();}
+
+// ============================================================
+// EXPIRY (in Weekly now — keeping for direct navigation)
+// ============================================================
+
+// ============================================================
+// CSV IMPORT
+// ============================================================
+function fuzzyMatch(a,b){
+  const na=normName(a),nb=normName(b);
+  if(na===nb) return 1;if(na.includes(nb)||nb.includes(na)) return 0.85;
+  const wa=new Set(na.split(' ')),wb=new Set(nb.split(' '));
+  const common=[...wa].filter(w=>wb.has(w)).length;
+  return Math.max(wa.size,wb.size)>0?common/Math.max(wa.size,wb.size):0;
+}
+
+function handleCSVUpload(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(file);e.target.value='';}
+
+function parseCSV(text){
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2){showToast('CSV is empty');return;}
+  const headers=lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/['"]/g,''));
+  const nI=headers.findIndex(h=>h.includes('product')||h.includes('name')||h.includes('item'));
+  const qI=headers.findIndex(h=>h.includes('qty')||h.includes('quantity')||h.includes('sold'));
+  const dI=headers.findIndex(h=>h.includes('date'));
+  const pI=headers.findIndex(h=>h.includes('price')||h.includes('selling')||h.includes('amount'));
+  if(nI===-1){showToast('CSV needs a Product Name column');return;}
+  pendingCSV=lines.slice(1).map(line=>{const c=line.split(',').map(x=>x.trim().replace(/['"]/g,''));return{name:c[nI]||'',qtySold:qI>=0?parseFloat(c[qI]||0):0,date:dI>=0?c[dI]:'',sellPrice:pI>=0?parseFloat(c[pI]||0):0};}).filter(r=>r.name);
+  document.getElementById('csv-preview-wrap').style.display='block';
+  document.getElementById('import-summary-wrap').style.display='none';
+  document.getElementById('csv-preview-table').innerHTML=`<thead><tr><th>Product</th><th>Qty</th><th>Date</th><th>Price</th></tr></thead><tbody>${pendingCSV.slice(0,10).map(r=>`<tr><td>${r.name}</td><td>${r.qtySold||'—'}</td><td>${r.date||'—'}</td><td>${r.sellPrice?fmt(r.sellPrice):'—'}</td></tr>`).join('')}${pendingCSV.length>10?`<tr><td colspan="4" style="color:var(--text3);text-align:center">+${pendingCSV.length-10} more</td></tr>`:''}</tbody>`;
+}
+
+async function confirmImport(){
+  if(!pendingCSV.length) return;
+  inventoryCache=await dbGetAll('inventory');
+  let matched=0,created=0,totalQtyMoved=0,totalValueRecovered=0;
+  const movedItems=[],momentumShifts=[];
+  for(const row of pendingCSV){
+    let best=null,bestScore=0;
+    for(const item of inventoryCache){const score=fuzzyMatch(row.name,item.name);if(score>bestScore&&score>=0.6){bestScore=score;best=item;}}
+    if(best){
+      const prevQty=best.qty||0,prevMov=best.movement;
+      const newQty=Math.max(0,prevQty-(row.qtySold||0));
+      const updated={...best,qty:newQty,lastMovementDate:row.date||todayISO(),updatedAt:Date.now()};
+      updated.movement=computeMovementScore(updated);
+      await dbPut('inventory',updated);
+      await dbPut('sales_imports',{id:uid(),productId:best.id,productName:row.name,qtySold:row.qtySold,date:row.date,sellPrice:row.sellPrice,createdAt:Date.now()});
+      totalQtyMoved+=row.qtySold||0;totalValueRecovered+=(row.qtySold||0)*(row.sellPrice||best.sellPrice||0);
+      if((row.qtySold||0)>0) movedItems.push({name:best.name,qty:row.qtySold});
+      if(prevMov!==updated.movement) momentumShifts.push({name:best.name,from:prevMov,to:updated.movement});
+      matched++;
+    } else {
+      const dupe=inventoryCache.find(i=>normName(i.name)===normName(row.name)&&i.needsReview);
+      if(!dupe){await dbPut('inventory',{id:uid(),name:row.name,brand:'',strength:'',batch:'',qty:0,originalQty:0,expiryDate:null,costPrice:0,sellPrice:row.sellPrice||0,ownership:'own',movement:'stable',intakeDate:row.date||todayISO(),lastMovementDate:row.date||todayISO(),notes:'Auto-created from CSV import',needsReview:true,updatedAt:Date.now()});created++;}
+    }
+  }
+  document.getElementById('csv-preview-wrap').style.display='none';pendingCSV=[];
+  const summaryRows=[];
+  if(matched>0) summaryRows.push({icon:'✅',text:`${matched} product${matched>1?'s':''} matched and updated`,val:`${totalQtyMoved} units`,valCls:'var(--green)'});
+  if(created>0) summaryRows.push({icon:'🆕',text:`${created} new item${created>1?'s':''} needs review`,val:'Review',valCls:'var(--amber)'});
+  if(totalValueRecovered>0) summaryRows.push({icon:'💰',text:'Estimated sales value',val:fmt(totalValueRecovered),valCls:'var(--green)'});
+  movedItems.slice(0,3).forEach(m=>summaryRows.push({icon:'📦',text:m.name,val:`${m.qty} sold`,valCls:'var(--text2)'}));
+  momentumShifts.slice(0,2).forEach(s=>summaryRows.push({icon:'🔄',text:`${s.name}: ${s.from}→${s.to}`,val:'',valCls:'var(--text3)'}));
+  document.getElementById('import-summary-list').innerHTML=summaryRows.map(r=>`<div class="import-summary-item"><div class="import-summary-icon">${r.icon}</div><div class="import-summary-text">${r.text}</div><div class="import-summary-val" style="color:${r.valCls}">${r.val}</div></div>`).join('');
+  document.getElementById('import-summary-wrap').style.display='block';
+  const reviewCount=document.getElementById('review-count');
+  if(reviewCount) reviewCount.textContent=created?`(${created})`:'';
+  showToast(`${matched} matched · ${created} for review`);
+  renderReviewList();refreshCockpit();
+}
+
+function cancelImport(){pendingCSV=[];document.getElementById('csv-preview-wrap').style.display='none';}
+
+async function renderReviewList(){
+  inventoryCache=await dbGetAll('inventory');
+  const items=inventoryCache.filter(i=>i.needsReview);
+  const el=document.getElementById('review-list');
+  document.getElementById('review-count').textContent=items.length?`(${items.length})`:'';
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No items need review.</div></div>';return;}
+  el.innerHTML=items.map(item=>`<div class="card" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:600;font-size:14px;color:var(--text)">${item.name}</div>
+      <span class="pill pill-review">Review</span>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${item.notes||''}</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openEditInventory('${item.id}')">Edit & Resolve</button>
+      <button class="btn btn-danger btn-sm" style="flex:1" onclick="discardReview('${item.id}')">Discard</button>
+    </div>
+  </div>`).join('');
+}
+
+async function discardReview(id){await dbDelete('inventory',id);renderReviewList();showToast('Discarded');}
+
+// ============================================================
+// WEEKLY REVIEW
+// ============================================================
+async function refreshWeekly(){
+  inventoryCache=await dbGetAll('inventory');repaymentsCache=await dbGetAll('repayment_logs');requestsCache=await dbGetAll('customer_requests');importsCache=await dbGetAll('sales_imports');
+  let totalValue=0,trapped=0,recoverable=0;
+  const mv={fast:[],stable:[],slow:[],stagnant:[],dead:[]};
+  let exp90=0,exp180=0,exp180p=0,conTotal=0;
+  inventoryCache.forEach(item=>{
+    const val=(item.costPrice||0)*(item.qty||0),sellVal=(item.sellPrice||0)*(item.qty||0);
+    totalValue+=val;const m=item.movement||'stable';
+    if(mv[m]) mv[m].push(item);
+    if(m==='slow'||m==='stagnant'||m==='dead') trapped+=val;
+    if(m==='fast'||m==='stable') recoverable+=sellVal;else if(m==='slow') recoverable+=sellVal*0.7;
+    const d=daysUntilExpiry(item.expiryDate);
+    if(d!==null){if(d<=90)exp90+=val;else if(d<=180)exp180+=val;else exp180p+=val;}
+    if(item.ownership==='consignment'||item.ownership==='mixed') conTotal+=(item.originalQty||item.qty||0)*(item.costPrice||0);
+  });
+  const paid=repaymentsCache.reduce((s,r)=>s+(r.amount||0),0);
+  const outstanding=Math.max(0,conTotal-paid);
+  const pct=conTotal>0?Math.min(100,Math.round(paid/conTotal*100)):0;
+
+  document.getElementById('wr-skus').textContent=inventoryCache.length||'0';
+  document.getElementById('wr-value').textContent=totalValue>0?fmt(totalValue):'Add inventory to begin';
+  document.getElementById('wr-recoverable').textContent=recoverable>0?fmt(recoverable):'—';
+  document.getElementById('wr-trapped').textContent=trapped>0?fmt(trapped):'None ✓';
+  document.getElementById('wr-con-out').textContent=outstanding>0?fmt(outstanding):'None ✓';
+  document.getElementById('wr-exp90').textContent=exp90>0?fmt(exp90):'None ✓';
+  document.getElementById('wr-exp180').textContent=exp180>0?fmt(exp180):'None ✓';
+  document.getElementById('wr-exp180p').textContent=exp180p>0?fmt(exp180p):'—';
+  document.getElementById('wr-paid').textContent=paid>0?fmt(paid):'₦0';
+  document.getElementById('wr-outstanding').textContent=outstanding>0?fmt(outstanding):'None ✓';
+  document.getElementById('wr-progress').style.width=pct+'%';
+
+  const total=inventoryCache.length||1;
+  const bars=[{label:'Fast',key:'fast',c:'var(--green)'},{label:'Stable',key:'stable',c:'var(--blue)'},{label:'Slow',key:'slow',c:'var(--orange)'},{label:'Stagnant',key:'stagnant',c:'var(--purple)'},{label:'Dead',key:'dead',c:'var(--text3)'}];
+  document.getElementById('wr-movement-bars').innerHTML=bars.map(b=>{const cnt=mv[b.key].length;const p=Math.round(cnt/total*100);return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text2)">${b.label}</span><span style="font-family:'DM Mono',monospace;color:${b.c}">${cnt} item${cnt!==1?'s':''} (${p}%)</span></div><div class="progress-wrap"><div class="progress-bar" style="width:${p}%;background:${b.c}"></div></div></div>`;}).join('');
+
+  // Cash conversion ranking
+  const cc=inventoryCache.filter(i=>(i.qty||0)>0&&i.costPrice&&i.sellPrice).map(item=>{const margin=item.sellPrice>0?(item.sellPrice-item.costPrice)/item.sellPrice:0;const velocity=computeVelocity(item);return{item,margin,velocity,score:margin*velocity*100};}).sort((a,b)=>b.score-a.score);
+  const ccEl=document.getElementById('wr-cash-intel');
+  if(!cc.length){ccEl.innerHTML='<div style="font-size:12px;color:var(--text3)">Add inventory with cost and sell prices.</div>';}
+  else{const top3=cc.slice(0,3);ccEl.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600;letter-spacing:.5px">FASTEST CONVERTING</div>'+top3.map(i=>`<div class="stat-row" style="margin-bottom:8px"><span class="stat-label" style="font-size:12px">${i.item.name}</span><span class="stat-value green" style="font-size:12px">${Math.round(i.margin*100)}% · ${i.velocity.toFixed(1)}/d</span></div>`).join('');}
+
+  // Overstock
+  const overstockItems=inventoryCache.filter(i=>(i.qty||0)>100&&(i.movement==='stagnant'||i.movement==='dead')&&(i.costPrice||0)*(i.qty||0)>10000).map(i=>({name:i.name,qty:i.qty,val:(i.costPrice||0)*(i.qty||0)})).sort((a,b)=>b.val-a.val).slice(0,4);
+  document.getElementById('wr-overstock').innerHTML=!overstockItems.length?'<div style="font-size:12px;color:var(--text3)">None detected ✓</div>':overstockItems.map(o=>`<div class="stat-row" style="margin-bottom:6px"><span class="stat-label" style="font-size:12px">${o.name} <span style="color:var(--text3)">(${fmtNum(o.qty)} units)</span></span><span class="stat-value red" style="font-size:12px">${fmt(o.val)}</span></div>`).join('');
+
+  // Stagnant high-value
+  const slist=[...mv.stagnant,...mv.dead].map(i=>({...i,val:(i.costPrice||0)*(i.qty||0)})).sort((a,b)=>b.val-a.val).slice(0,5);
+  document.getElementById('wr-stagnant-list').innerHTML=!slist.length?'<div style="font-size:12px;color:var(--text3)">None detected ✓</div>':slist.map(i=>`<div class="stat-row" style="margin-bottom:6px"><span class="stat-label" style="font-size:12px">${i.name}</span><span class="stat-value muted" style="font-size:12px">${fmt(i.val)}</span></div>`).join('');
+
+  // 7-day trends
+  const snapshots=(await dbGetAll('daily_snapshots')).sort((a,b)=>a.date.localeCompare(b.date));
+  const snapCard=document.getElementById('wr-snapshots-card');
+  if(snapshots.length>=2){
+    snapCard.style.display='block';
+    const first=snapshots[Math.max(0,snapshots.length-7)],latest=snapshots[snapshots.length-1];
+    const rows=[{label:'Recoverable (7d)',now:latest.recoverable,prev:first.recoverable,invert:false},{label:'Trapped Capital',now:latest.trapped,prev:first.trapped,invert:true},{label:'Total Repaid',now:latest.paid,prev:first.paid,invert:false}];
+    document.getElementById('wr-snapshot-trends').innerHTML=rows.map(r=>{const t=trendArrow(r.now,r.prev);const good=r.invert?(t.cls==='down'):(t.cls==='up');return `<div class="trend-row"><span class="trend-label">${r.label}</span><span class="trend-val" style="color:var(--text2)">${fmt(r.now)}</span><span style="color:${good?'var(--green)':'var(--orange)'};font-size:11px;font-weight:600">${t.arrow}</span></div>`;}).join('');
+  } else snapCard.style.display='none';
+
+  // Customer requests summary
+  const reqCard=document.getElementById('wr-requests-card');
+  const topReqs=(requestsCache||[]).filter(r=>r.count>=2&&r.status!=='dismissed'&&r.status!=='stocked').sort((a,b)=>b.count-a.count).slice(0,5);
+  if(topReqs.length){
+    reqCard.style.display='block';
+    document.getElementById('wr-requests-list').innerHTML=topReqs.map(r=>`<div class="stat-row" style="margin-bottom:6px"><span class="stat-label" style="font-size:12px">${r.name} <span class="pill pill-request" style="font-size:10px">${r.status.replace(/_/g,' ')}</span></span><span class="stat-value" style="font-size:12px;color:var(--teal)">${r.count}×</span></div>`).join('');
+  } else reqCard.style.display='none';
+}
+
+// ============================================================
+// DATA BACKUP
+// ============================================================
+function showDataMenu(){document.getElementById('modal-data').classList.add('open');}
+async function exportData(){
+  const inv=await dbGetAll('inventory'),reps=await dbGetAll('repayment_logs'),snaps=await dbGetAll('daily_snapshots'),aq=await dbGetAll('action_queue'),reqs=await dbGetAll('customer_requests');
+  const payload={version:4,exportedAt:new Date().toISOString(),inventory:inv,repayment_logs:reps,daily_snapshots:snaps,action_queue:aq,customer_requests:reqs};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`pbsrx-backup-${todayISO()}.json`;a.click();URL.revokeObjectURL(url);
+  showToast('Backup exported');closeModal('modal-data');
+}
+async function importData(e){
+  const file=e.target.files[0];if(!file)return;const text=await file.text();
+  try{
+    const data=JSON.parse(text);if(!data.inventory){showToast('Invalid backup file');return;}
+    if(!confirm(`Restore ${data.inventory.length} inventory items?`))return;
+    for(const item of data.inventory) await dbPut('inventory',item);
+    for(const r of (data.repayment_logs||[])) await dbPut('repayment_logs',r);
+    for(const s of (data.daily_snapshots||[])) await dbPut('daily_snapshots',s);
+    for(const r of (data.customer_requests||[])) await dbPut('customer_requests',r);
+    showToast(`Restored: ${data.inventory.length} items`);closeModal('modal-data');refreshCockpit();
+  }catch(err){showToast('Restore failed');}
+  e.target.value='';
+}
+async function exportCSVInventory(){
+  const inv=await dbGetAll('inventory');
+  const headers=['Name','Brand','Strength','Batch','Qty','Cost','Sell','Ownership','Movement','Expiry','Last Movement','Stock Value'];
+  const rows=inv.map(i=>[i.name,i.brand||'',i.strength||'',i.batch||'',i.qty||0,i.costPrice||0,i.sellPrice||0,i.ownership||'own',i.movement||'stable',i.expiryDate||'',i.lastMovementDate||'',(i.costPrice||0)*(i.qty||0)].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`pbsrx-inventory-${todayISO()}.csv`;a.click();URL.revokeObjectURL(url);
+  showToast('CSV exported');closeModal('modal-data');
+}
+async function clearActionQueue(){const all=await dbGetAll('action_queue');for(const a of all) await dbDelete('action_queue',a.id);showToast('Queue cleared');closeModal('modal-data');refreshCockpit();}
+
+// ============================================================
+// MODAL CLOSE
+// ============================================================
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// ============================================================
+// DROP ZONE
+// ============================================================
+function initDropZone(){
+  const zone=document.getElementById('drop-zone');
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over')});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f?.name.endsWith('.csv')){const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(f);}else showToast('Drop a .csv file');});
+}
+
+// ============================================================
+// PWA
+// ============================================================
+function injectManifest(){
+  const m={name:"PBSRx Operational Cockpit",short_name:"PBSRx",display:"standalone",background_color:"#0f1117",theme_color:"#0f1117",start_url:"./",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f1117'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E💊%3C/text%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml"}]};
+  document.getElementById('manifest-link').href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/json'}));
+}
+function registerSW(){
+  if(!('serviceWorker' in navigator))return;
+  const sw=`const C='pbsrx-v4';self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'})),{scope:'./'}).catch(()=>{});
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+async function boot(){
+  document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short'});
+  injectManifest();registerSW();
+  await initDB();
+  const lastScreen=loadSession('lastScreen','cockpit');
+  const lastFilter=loadSession('invFilter','all');
+  invFilter=lastFilter;
+  setTimeout(()=>{const chip=document.querySelector(`[data-filter="${lastFilter}"]`);if(chip){document.querySelectorAll('.sort-chip[data-filter]').forEach(c=>c.classList.remove('active'));chip.classList.add('active');}},60);
+  await refreshCockpit();
+  renderReviewList();
+  initDropZone();
+  if(lastScreen&&lastScreen!=='cockpit') navigate(lastScreen);
+}
+boot();
+</script>
+</body>
+</html>
